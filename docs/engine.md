@@ -75,23 +75,37 @@ Implemented by [`simulateStandard`](../src/engine/simulate.js).
 
 The simulation is **discrete and yearly**, from `userInfo.age` up to a
 configurable horizon (default: 100). The output is an array
-`[{ age, year, netWorth, byClass, passiveIncome, expenses, debtPayments }, …]`
+`[{ age, year, netWorth, byClass, passiveIncome, pensionIncome, expenses, debtPayments }, …]`
 of length `horizonAge − age + 1`. Index 0 is the starting snapshot (no growth
 applied yet); index *y* is the end of year *y*.
 
 Within each year *y* (1 ≤ y ≤ horizonAge − startAge):
 
-1. For each asset *a*, call `stepClass(a, ctx)` where `ctx = { year: y,
+1. Decide whether contributions apply this year (Standard scenario only):
+   ```
+   cutoffAge          = min(userInfo.retirementAge,
+                            min(pension.startingAge),
+                            DEFAULT_RETIREMENT_AGE)   // 67
+   applyContribution  = callerWantsContributions ∧ (currentAge < cutoffAge)
+   ```
+   Once retired (or once a pension begins), the user has no salary, so new
+   contributions to stocks/bonds/crypto/etc. stop. Callers can still force
+   contributions off entirely by passing `applyContribution: false`
+   (used by some Coast FIRE call sites).
+2. For each asset *a*, call `stepClass(a, ctx)` where `ctx = { year: y,
    currentAge: startAge + y, applyContribution }`.
-2. Sum `passiveIncome` across all assets → `totalPassiveIncome_y`.
-3. Sum `yearlyPayments` across all `personalDebt` assets → `totalDebtPayments_y`.
-4. Compute `monthlyExpenses_y = monthlyExpenses_0 · (1 + inflationRate)^y`,
+3. Sum `passiveIncome` across all assets → `totalPassiveIncome_y`. Track the
+   pension share separately as `pensionIncome_y`.
+4. Sum `yearlyPayments` across all `personalDebt` assets → `totalDebtPayments_y`.
+5. Compute `monthlyExpenses_y = monthlyExpenses_0 · (1 + inflationRate)^y`,
    `yearlyExpenses_y = monthlyExpenses_y · 12` (see [Inflation](#inflation)).
-5. Compute `netWorth_y = computeNetWorth(updatedAssets)`
+6. Compute `netWorth_y = computeNetWorth(updatedAssets)`
    (see [Net worth](#net-worth-definition)).
 
-Standard scenario passes `applyContribution = true`; Coast FIRE will pass
-`false` (C4).
+The Coast FIRE and FIRE scenarios use their own contribution rules
+(`applyContribution = currentAge ≤ coastAge` and `applyContribution =
+currentAge < startAge` respectively); the Standard cutoff above does not
+apply to them.
 
 ## Inflation
 

@@ -18,6 +18,51 @@ import { computeSaleProceeds, applySaleConversion } from './sale.js';
 const DEFAULT_HORIZON_AGE = 100;
 
 /**
+ * Default retirement age used when neither a user override nor a pension is
+ * configured. 67 matches the current statutory default in many EU countries
+ * (including the app's locked country, Germany).
+ *
+ * Kept in sync with `DEFAULT_RETIREMENT_AGE` in scenarios.js.
+ * @pure
+ * @type {number}
+ */
+const DEFAULT_RETIREMENT_AGE = 67;
+
+/**
+ * Computes the age at which contributions stop in the **Standard** scenario.
+ *
+ * Rule: in the Standard ("if you keep doing what you're doing today")
+ * trajectory, contributions are funded by the user's active salary. Once
+ * the user retires, salary disappears, and so do contributions. The
+ * cutoff is the earliest of:
+ *   1. `userInfo.retirementAge`         (the user's planned retirement)
+ *   2. earliest `pension.startingAge`   (the latest age a pension implies)
+ *   3. `DEFAULT_RETIREMENT_AGE` (67)    if neither of the above is set
+ *
+ * Contributions apply while `currentAge < cutoff`; from `currentAge ≥ cutoff`
+ * they stop. (Strict `<` so the cutoff age is the *first* no-contribution
+ * year, matching the "no salary in retirement" intuition.)
+ *
+ * @pure
+ * @param {Object} state
+ * @returns {number} cutoff age
+ */
+function standardContributionCutoff(state) {
+  const userInfoR =
+    typeof state.userInfo?.retirementAge === 'number' &&
+    Number.isFinite(state.userInfo.retirementAge)
+      ? state.userInfo.retirementAge
+      : null;
+  const pensions = (state.assets || []).filter((a) => a.class === 'pension');
+  const pensionR =
+    pensions.length > 0 ? Math.min(...pensions.map((p) => p.startingAge)) : null;
+
+  const candidates = [userInfoR, pensionR].filter((v) => v != null);
+  if (candidates.length === 0) return DEFAULT_RETIREMENT_AGE;
+  return Math.min(...candidates);
+}
+
+/**
  * Deep-clone an asset (plain JSON works because all fields are POD).
  * @private
  */
@@ -87,24 +132,40 @@ function applyYearSales(assets, year) {
 
 /**
  * Runs the **Standard** scenario simulation: contributions continue as today,
- * no decumulation. Each year:
- *   1. Apply the per-class step (growth, contributions, passive income).
+ * no decumulation, until the user retires (no salary → no contributions).
+ *
+ * Each year:
+ *   1. Apply the per-class step (growth, contributions if before cutoff,
+ *      passive income).
  *   2. Aggregate passive income, debt payments.
  *   3. Compute end-of-year net worth.
+ *
+ * **Contribution cutoff.** Contributions only apply while
+ * `currentAge < min(userInfo.retirementAge, earliest pension.startingAge,
+ *                   DEFAULT_RETIREMENT_AGE)`.
+ * From the cutoff onward, contributions stop because the user no longer has
+ * salary income to invest. Callers can still force contributions off the
+ * entire trajectory by passing `applyContribution: false` (used by some
+ * Coast FIRE call sites that want a "stop-now" baseline).
  *
  * @pure  No mutation of input state. Same input → same output.
  *
  * @param {Object} state             - { userInfo, assets }
  * @param {Object} [opts]
  * @param {number} [opts.horizonAge=100] - Stop at this age
- * @param {boolean} [opts.applyContribution=true] - Inject yearly contributions
- *   (false used for Coast FIRE scenario in C4)
+ * @param {boolean} [opts.applyContribution=true] - Allow yearly contributions
+ *   up to the contribution cutoff. Pass `false` to disable contributions
+ *   entirely (used by Coast FIRE).
  * @returns {YearResult[]} Year-by-year trajectory, length = horizonAge − age + 1.
  *   Index 0 is the starting state (no step applied yet).
  *
  * @formula
+ *   cutoffAge = min(userInfo.retirementAge, min(pension.startingAge),
+ *                   DEFAULT_RETIREMENT_AGE)
+ *
  *   Year 0: take state as-is, compute netWorth, expenses (no inflation).
  *   For each year y in 1..(horizonAge − startAge):
+ *     applyContribution = callerWantsContributions ∧ (startAge + y < cutoffAge)
  *     for each asset a:
  *       (a', pi_a) = stepClass(a, { year: y, currentAge: startAge + y, applyContribution })
  *     totalPassiveIncome  = Σ pi_a
@@ -118,6 +179,8 @@ function applyYearSales(assets, year) {
  *   - All step functions are pure and deterministic.
  *   - Active income (salary) is implicit: it is assumed to cover expenses in
  *     the Standard scenario; net worth tracks investments only.
+ *   - Contributions are bounded by the user's working years: once retired
+ *     (or once a pension kicks in), there is no salary to invest.
  *
  * Cross-reference: see "Time stepping" in
  *   [engine.md](../../docs/engine.md#time-stepping).
@@ -132,7 +195,14 @@ function applyYearSales(assets, year) {
  */
 export function simulateStandard(state, opts = {}) {
   const horizonAge = opts.horizonAge ?? DEFAULT_HORIZON_AGE;
-  const applyContribution = opts.applyContribution !== false;
+  // When the caller asks for contributions (default), honor them per-year
+  // up to the contribution cutoff (see standardContributionCutoff).
+  // When the caller explicitly disables them, contributions are off the
+  // entire trajectory regardless of age (this preserves the legacy
+  // "Standard with applyContribution:false ≡ pure-coast" semantic used by
+  // some Coast FIRE call sites and tests).
+  const callerWantsContributions = opts.applyContribution !== false;
+  const cutoffAge = standardContributionCutoff(state);
 
   // Deep-clone everything to guarantee purity
   const userInfo = { ...state.userInfo };
@@ -158,6 +228,7 @@ export function simulateStandard(state, opts = {}) {
   // Years 1..numYears
   for (let y = 1; y <= numYears; y++) {
     const currentAge = startAge + y;
+    const applyContribution = callerWantsContributions && currentAge < cutoffAge;
     const ctx = { year: y, currentAge, applyContribution };
 
     let totalPassiveIncome = 0;
@@ -216,7 +287,8 @@ export function simulateStandard(state, opts = {}) {
  */
 export function simulateAndReturnAssets(state, opts = {}) {
   const horizonAge = opts.horizonAge ?? DEFAULT_HORIZON_AGE;
-  const applyContribution = opts.applyContribution !== false;
+  const callerWantsContributions = opts.applyContribution !== false;
+  const cutoffAge = standardContributionCutoff(state);
 
   const userInfo = { ...state.userInfo };
   let assets = (state.assets || []).map(cloneAsset);
@@ -237,6 +309,7 @@ export function simulateAndReturnAssets(state, opts = {}) {
 
   for (let y = 1; y <= numYears; y++) {
     const currentAge = startAge + y;
+    const applyContribution = callerWantsContributions && currentAge < cutoffAge;
     const ctx = { year: y, currentAge, applyContribution };
     let totalPassiveIncome = 0;
     let totalDebtPayments = 0;

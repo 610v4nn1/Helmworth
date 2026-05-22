@@ -330,4 +330,80 @@ export default function run({ test, assert, assertClose, assertDeepEqual }) {
     const b = simulateStandard(state, { horizonAge: 40 });
     assertDeepEqual(a, b, 'two runs must be deep-equal');
   });
+
+  // -------------------------------------------------------------------------
+  // Contribution cutoff (Standard scenario stops contributing at the user's
+  // retirement / pension age — no salary in retirement → no contributions).
+  // -------------------------------------------------------------------------
+  test('TC2.27: contributions stop at userInfo.retirementAge', () => {
+    // 0% growth, 0% inflation: easy arithmetic. Yearly contribution 1000.
+    // Retirement at 35; user is 30. Years 31..34 contribute (4 years), year
+    // 35 onward does not.
+    const state = {
+      userInfo: { age: 30, retirementAge: 35, monthlyExpenses: 0, inflationRate: 0, country: '' },
+      assets: [createStocks({
+        value: 10000, avgReturnRate: 0, yearlyContribution: 1000, capitalGainsTaxRate: 0,
+      })],
+    };
+    const traj = simulateStandard(state, { horizonAge: 40 });
+    const at34 = traj.find((r) => r.age === 34);
+    const at35 = traj.find((r) => r.age === 35);
+    const at40 = traj.find((r) => r.age === 40);
+    // 10000 + 4·1000 = 14000 by age 34 (last contribution year before cutoff).
+    assertClose(at34.byClass.stocks, 14000, 1e-6, 'year 34: 4 contribs');
+    // Year 35 = retirement: no new contribution.
+    assertClose(at35.byClass.stocks, 14000, 1e-6, 'year 35: no contrib at cutoff');
+    // Year 40: still no contributions; net worth unchanged at 0% growth.
+    assertClose(at40.byClass.stocks, 14000, 1e-6, 'year 40: still no contribs');
+  });
+
+  test('TC2.28: contributions stop at earliest pension startingAge when retirementAge unset', () => {
+    // No userInfo.retirementAge; pension starts at 67. With age 30, that's
+    // 37 contribution years (31..66 inclusive, then stop at 67).
+    const state = {
+      userInfo: { age: 30, monthlyExpenses: 0, inflationRate: 0, country: '' },
+      assets: [
+        createStocks({ value: 0, avgReturnRate: 0, yearlyContribution: 100, capitalGainsTaxRate: 0 }),
+        createPension({ yearlyAmount: 0, revaluationRate: 0, startingAge: 67 }),
+      ],
+    };
+    const traj = simulateStandard(state, { horizonAge: 80 });
+    const at66 = traj.find((r) => r.age === 66);
+    const at67 = traj.find((r) => r.age === 67);
+    const at80 = traj.find((r) => r.age === 80);
+    // Years 31..66 contribute → 36 contribs of 100 = 3600.
+    assertClose(at66.byClass.stocks, 3600, 1e-6, 'last contrib year 66');
+    assertClose(at67.byClass.stocks, 3600, 1e-6, 'no contrib at pension age');
+    assertClose(at80.byClass.stocks, 3600, 1e-6, 'still no contrib in late retirement');
+  });
+
+  test('TC2.29: cutoff is the earliest of retirementAge and pension startingAge', () => {
+    // retirementAge=40 (early FIRE-style), pension at 67. Cutoff = 40.
+    const state = {
+      userInfo: { age: 30, retirementAge: 40, monthlyExpenses: 0, inflationRate: 0, country: '' },
+      assets: [
+        createStocks({ value: 0, avgReturnRate: 0, yearlyContribution: 1000, capitalGainsTaxRate: 0 }),
+        createPension({ yearlyAmount: 0, revaluationRate: 0, startingAge: 67 }),
+      ],
+    };
+    const traj = simulateStandard(state, { horizonAge: 70 });
+    const at39 = traj.find((r) => r.age === 39);
+    const at40 = traj.find((r) => r.age === 40);
+    // Years 31..39 contribute → 9·1000 = 9000.
+    assertClose(at39.byClass.stocks, 9000, 1e-6);
+    assertClose(at40.byClass.stocks, 9000, 1e-6);
+  });
+
+  test('TC2.30: applyContribution=false still disables contributions everywhere', () => {
+    // Even before retirementAge, explicit override wins.
+    const state = {
+      userInfo: { age: 30, retirementAge: 65, monthlyExpenses: 0, inflationRate: 0, country: '' },
+      assets: [createStocks({
+        value: 1000, avgReturnRate: 0, yearlyContribution: 5000, capitalGainsTaxRate: 0,
+      })],
+    };
+    const traj = simulateStandard(state, { horizonAge: 35, applyContribution: false });
+    const at35 = traj.find((r) => r.age === 35);
+    assertClose(at35.byClass.stocks, 1000, 1e-6, 'no growth, no contribs');
+  });
 }
