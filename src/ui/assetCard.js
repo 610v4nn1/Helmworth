@@ -176,16 +176,56 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       className: 'update-btn',
       attrs: { type: 'button' },
       // Saving is automatic on every field `change` event, so this button
-      // simply closes the expanded card. We blur the active field first to
-      // force a `change` event for any currently-focused input that has
-      // pending edits (some browsers only fire `change` on blur/Enter).
+      // simply closes the expanded card.
+      //
+      // Subtlety: some inputs (text/number) only fire `change` on blur,
+      // and a focused input may have a pending edit. We must NOT call
+      // `blur()` synchronously here, because our `change` listener calls
+      // `store.updateAsset()` which notifies subscribers synchronously,
+      // and `assetList.render()` then destroys the overlay (including
+      // this very button) mid-click. That caused the previously-observed
+      // "first click reopens, second click closes" glitch.
+      //
+      // Instead we:
+      //   1. Read any pending value from the focused input *directly* and
+      //      forward it to the store (matching the existing `change`
+      //      listener's behaviour). This avoids relying on a synchronous
+      //      blur→change pipeline.
+      //   2. Defer the close to the next microtask so it lands after any
+      //      re-render triggered by step 1 settles.
       on: { click: (e) => {
         e.stopPropagation();
+        e.preventDefault();
+
+        // Step 1: flush a pending edit from the focused input, if any.
         const active = document.activeElement;
-        if (active && overlay.contains(active) && typeof active.blur === 'function') {
-          active.blur();
+        if (
+          active &&
+          active !== document.body &&
+          overlay.contains(active) &&
+          fieldInputs &&
+          typeof active.matches === 'function' &&
+          active.matches('input, select')
+        ) {
+          // Find which field this input belongs to so we can apply the
+          // same parsing the `change` listener would.
+          const fieldKey = Object.keys(fieldInputs).find(
+            (k) => fieldInputs[k] === active
+          );
+          if (fieldKey) {
+            const fdef = fields.find((f) => f.key === fieldKey);
+            if (fdef) {
+              const r = readField(fdef, active);
+              if (!r.error) {
+                store.updateAsset(asset.id, { [fdef.key]: r.value });
+              }
+            }
+          }
         }
-        onToggleExpand(null);
+
+        // Step 2: defer the close so any synchronous re-render from
+        // step 1 has finished before we collapse.
+        Promise.resolve().then(() => onToggleExpand(null));
       }},
       children: 'Update',
     }),
