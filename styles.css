@@ -2050,8 +2050,9 @@ mjx-container { color: var(--fg-strong); }
   height: 360px;
 }
 
-/* Empty-state visual — let the surrounding text explain what's missing. */
-.chart-wrap.empty {
+/* Empty-state visual — scoped to coverage charts only, so the projections
+   and assets charts keep their original empty appearance. */
+.coverage-chart-wrap.empty {
   background:
     repeating-linear-gradient(
       135deg,
@@ -2064,7 +2065,7 @@ mjx-container { color: var(--fg-strong); }
   justify-content: center;
 }
 
-.chart-wrap.empty canvas { display: none; }
+.coverage-chart-wrap.empty canvas { display: none; }
 
 /* Coverage legend: grouped chips with custom swatches that beat the default
    single-color marker bar (which we suppress on .cov-marker). */
