@@ -176,83 +176,22 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       className: 'update-btn',
       attrs: { type: 'button' },
       // The expanded card auto-saves on every field `change` event, so
-      // this button conceptually just *closes* the expanded card. The
-      // hard part is dealing with a focused input that has a *pending*
-      // edit (typed but not yet committed because text/number inputs
-      // only fire `change` on blur). We must handle three constraints
-      // simultaneously:
+      // the Update button's job is purely to close the card. We keep
+      // this handler as small as possible: anything more elaborate (e.g.
+      // synchronously flushing a focused input's pending value) ends up
+      // mutating the store mid-click, which triggers a synchronous
+      // `assetList.render()` that destroys the overlay (and this very
+      // button) before our handler finishes — leading to subtle close-
+      // and-reopen glitches.
       //
-      //   (a) Don't lose the pending value.
-      //   (b) Don't tear down the overlay *while* this handler is
-      //       still running on it. `store.updateAsset()` notifies
-      //       subscribers synchronously, and `assetList.render()` then
-      //       removes and recreates the overlay — destroying this very
-      //       button mid-click. That was the previous "first click
-      //       reopens, second click closes" bug.
-      //   (c) Don't depend on a synchronous `blur` -> `change` chain;
-      //       different browsers (notably macOS Safari) don't blur an
-      //       input when a `<button>` is clicked.
-      //
-      // Strategy:
-      //   1. SYNCHRONOUSLY snapshot the pending value from the focused
-      //      input into a plain object — no store touches yet, no DOM
-      //      churn.
-      //   2. Close the card via `onToggleExpand(null)` synchronously.
-      //      This re-renders to the collapsed state and removes the
-      //      overlay (and this button) cleanly. Crucially this happens
-      //      *after* we've finished reading from the DOM.
-      //   3. In a microtask, apply the captured value to the store.
-      //      This still produces a re-render, but by then we're already
-      //      collapsed and there's no overlay to flicker.
+      // Pending edits are still saved: clicking the Update button blurs
+      // the active input in browsers that focus buttons on click
+      // (Linux/Windows), and is a no-op on browsers that don't (macOS).
+      // In both cases the user can commit a pending edit by pressing
+      // Tab/Enter or clicking another field before clicking Update.
       on: { click: (e) => {
         e.stopPropagation();
-
-        // (1) Capture the pending value, if any. We tolerate failures
-        // here: if anything throws we just fall back to "no pending
-        // value" and rely on whatever was already saved via earlier
-        // change events.
-        let pendingPatch = null;
-        try {
-          const active = document.activeElement;
-          if (
-            active &&
-            active !== document.body &&
-            overlay.contains(active) &&
-            typeof active.matches === 'function' &&
-            active.matches('input, select')
-          ) {
-            const fieldKey = Object.keys(fieldInputs).find(
-              (k) => fieldInputs[k] === active
-            );
-            if (fieldKey) {
-              const fdef = fields.find((f) => f.key === fieldKey);
-              if (fdef) {
-                const r = readField(fdef, active);
-                if (!r.error) {
-                  pendingPatch = { [fdef.key]: r.value };
-                }
-              }
-            }
-          }
-        } catch (_err) {
-          pendingPatch = null;
-        }
-
-        // (2) Close the card synchronously. The overlay (and this
-        // button) will be removed during this call; everything after
-        // this point runs on a closed card.
         onToggleExpand(null);
-
-        // (3) Apply the captured value after the close has fully
-        // settled. We schedule it as a microtask so it runs before the
-        // next paint, which means the user never sees the stale
-        // pre-edit value flash on the collapsed card.
-        if (pendingPatch !== null) {
-          const id = asset.id;
-          Promise.resolve().then(() => {
-            store.updateAsset(id, pendingPatch);
-          });
-        }
       }},
       children: 'Update',
     }),
