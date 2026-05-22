@@ -381,11 +381,14 @@ need 500 net at 20 % CGT:
 
 Covers a yearly cash shortfall:
 
-1. **Liquid investable** = `stocks + bonds + crypto` (excluding cash). Allocate
-   `shortfall` proportionally to each class's share.
-2. Within each class, allocate proportionally across that class's assets.
-3. For each asset, call `sellLotsHIFO(asset.lots, allocation, asset.capitalGainsTaxRate)`.
-4. If `drawn < shortfall`, drain `cash` assets in order until covered.
+1. **Drain `cash` assets first**, in list order, taking `min(cash.value, remaining)`
+   from each until the shortfall is covered or all cash is exhausted. Cash
+   earns no return and pays no tax, so spending it before selling growth
+   assets avoids both opportunity cost and capital gains tax.
+2. If still short: **liquid investable** = `stocks + bonds + crypto`. Allocate
+   the *remaining* shortfall proportionally to each class's share.
+3. Within each class, allocate proportionally across that class's assets.
+4. For each asset, call `sellLotsHIFO(asset.lots, allocation, asset.capitalGainsTaxRate)`.
 5. `success ⇔ remainingShortfall ≤ ε`. If `success === false`, the FIRE
    simulation marks the year as `failedAtAge` and stops.
 

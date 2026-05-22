@@ -126,9 +126,12 @@ function cloneLot(l) {
 
 /**
  * Covers a yearly cash shortfall by drawing down liquid assets:
- *   1. Allocate `shortfall` proportionally across stocks/bonds/crypto by current value.
- *   2. For each class, sell lots HIFO (paying CGT per the asset's rate).
- *   3. If still short, drain `cash` assets in order.
+ *   1. **Drain `cash` assets first** (in list order) — cash earns no return,
+ *      pays no tax, so it's always optimal to spend it before selling
+ *      growth assets that would incur capital gains.
+ *   2. Allocate the remaining shortfall proportionally across
+ *      stocks/bonds/crypto by current value.
+ *   3. For each class, sell lots HIFO (paying CGT per the asset's rate).
  *   4. If still short, mark `success = false`.
  *
  * @pure
@@ -137,18 +140,25 @@ function cloneLot(l) {
  * @returns {{updatedAssets: Array, drawn: number, success: boolean, taxPaid: number}}
  *
  * @formula
+ *   remaining = shortfall
+ *
+ *   // Step 1: cash first
+ *   for each cash asset a (in order), while remaining > 0:
+ *     take = min(a.value, remaining)
+ *     a.value -= take
+ *     drawn   += take
+ *     remaining -= take
+ *
+ *   // Step 2: proportional sale of stocks/bonds/crypto for the rest
  *   liquid = stocks + bonds + crypto (excluding cash)  // by current value
- *   if liquid > 0:
+ *   if remaining > 0 and liquid > 0:
  *     for each class c in {stocks,bonds,crypto}:
- *       targetNet_c = shortfall · (valueOf(c) / liquid)
+ *       targetNet_c = remaining · (valueOf(c) / liquid)
  *       distribute targetNet_c across that class's assets proportionally to their value
  *       each asset: sellLotsHIFO(asset.lots, targetNet_assetShare, asset.capitalGainsTaxRate)
+ *     drawn += Σ netProceeds; remaining = shortfall − drawn
  *
- *   remainingShortfall = shortfall − netDrawnFromLiquid
- *   if remainingShortfall > 0:
- *     drain cash assets in order until covered or all dry
- *
- *   success = (remainingShortfall ≤ 0 within ε)
+ *   success = (remaining ≤ ε)
  *
  * Cross-reference: see "Drawdown algorithm" in
  *   [engine.md](../../docs/engine.md#drawdown-algorithm).
@@ -162,50 +172,55 @@ export function drawdownYear(assets, shortfall) {
     return { updatedAssets: result, drawn: 0, success: true, taxPaid: 0 };
   }
 
-  // 1. Compute proportional split across stocks/bonds/crypto by total value.
-  const liquidClasses = ['stocks', 'bonds', 'crypto'];
-  const valueByClass = {};
-  let totalLiquid = 0;
+  let remaining = shortfall;
+
+  // 1. Drain cash assets first (preserves growth assets and avoids CGT).
   for (const a of result) {
-    if (liquidClasses.includes(a.class)) {
-      const v = a.lots.reduce((s, l) => s + l.value, 0);
-      valueByClass[a.class] = (valueByClass[a.class] || 0) + v;
-      totalLiquid += v;
-    }
+    if (a.class !== 'cash' || remaining <= 1e-6) continue;
+    const take = Math.min(a.value, remaining);
+    a.value -= take;
+    drawn += take;
+    remaining -= take;
   }
 
-  if (totalLiquid > 0) {
-    for (const cls of liquidClasses) {
-      const classValue = valueByClass[cls] ?? 0;
-      if (classValue <= 0) continue;
-      const targetForClass = shortfall * (classValue / totalLiquid);
-      // Allocate within the class proportionally to each asset's value
-      const classAssets = result.filter((a) => a.class === cls);
-      const classTotal = classAssets.reduce(
-        (s, a) => s + a.lots.reduce((ss, l) => ss + l.value, 0),
-        0
-      );
-      for (const asset of classAssets) {
-        const assetValue = asset.lots.reduce((s, l) => s + l.value, 0);
-        if (assetValue <= 0) continue;
-        const assetShare = targetForClass * (assetValue / classTotal);
-        const sale = sellLotsHIFO(asset.lots, assetShare, asset.capitalGainsTaxRate ?? 0);
-        asset.lots = sale.updatedLots;
-        drawn += sale.netProceeds;
-        taxPaid += sale.taxPaid;
+  // 2. If still short, sell across stocks/bonds/crypto proportionally.
+  if (remaining > 1e-6) {
+    const liquidClasses = ['stocks', 'bonds', 'crypto'];
+    const valueByClass = {};
+    let totalLiquid = 0;
+    for (const a of result) {
+      if (liquidClasses.includes(a.class)) {
+        const v = a.lots.reduce((s, l) => s + l.value, 0);
+        valueByClass[a.class] = (valueByClass[a.class] || 0) + v;
+        totalLiquid += v;
       }
     }
-  }
 
-  // 2. Cover remaining shortfall from cash assets, in order.
-  let remaining = shortfall - drawn;
-  if (remaining > 1e-6) {
-    for (const a of result) {
-      if (a.class !== 'cash' || remaining <= 1e-6) continue;
-      const take = Math.min(a.value, remaining);
-      a.value -= take;
-      drawn += take;
-      remaining -= take;
+    if (totalLiquid > 0) {
+      const targetTotal = remaining;
+      let netFromLiquid = 0;
+      for (const cls of liquidClasses) {
+        const classValue = valueByClass[cls] ?? 0;
+        if (classValue <= 0) continue;
+        const targetForClass = targetTotal * (classValue / totalLiquid);
+        // Allocate within the class proportionally to each asset's value
+        const classAssets = result.filter((a) => a.class === cls);
+        const classTotal = classAssets.reduce(
+          (s, a) => s + a.lots.reduce((ss, l) => ss + l.value, 0),
+          0
+        );
+        for (const asset of classAssets) {
+          const assetValue = asset.lots.reduce((s, l) => s + l.value, 0);
+          if (assetValue <= 0) continue;
+          const assetShare = targetForClass * (assetValue / classTotal);
+          const sale = sellLotsHIFO(asset.lots, assetShare, asset.capitalGainsTaxRate ?? 0);
+          asset.lots = sale.updatedLots;
+          drawn += sale.netProceeds;
+          netFromLiquid += sale.netProceeds;
+          taxPaid += sale.taxPaid;
+        }
+      }
+      remaining -= netFromLiquid;
     }
   }
 

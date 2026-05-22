@@ -215,13 +215,16 @@ Each year:
 1. Compute `shortfall = yearlyExpenses + yearlyDebtPayments − passiveIncome`.
 2. If `shortfall ≤ 0`, no drawdown needed; surplus accrues to cash.
 3. If `shortfall > 0`:
-   - Compute total liquid investable = `stocks + bonds + crypto` (excluding cash).
-   - Allocate withdrawal to each class proportionally to its share of total liquid investable.
+   - **Drain cash assets first** (in list order). Cash earns no return and pays
+     no tax, so spending it before selling growth assets is always optimal.
+   - If cash is exhausted and shortfall remains: total liquid investable
+     = `stocks + bonds + crypto`. Allocate the remaining shortfall to each
+     class proportionally to its share of total liquid investable.
    - For each class, sell lots HIFO until target proceeds met (gross-up for capital
      gains tax: `proceedsNeeded = net / (1 − effectiveTaxRate)`, with a per-lot
      correction since each lot has its own gain).
-   - If liquid investable insufficient, drain remaining cash; if still insufficient,
-     mark scenario as **failed** at this year.
+   - If liquid investable + cash is still insufficient, mark scenario as
+     **failed** at this year.
 
 ### 3.5 Coast FIRE Check
 
@@ -519,7 +522,8 @@ No build step. ES modules via `<script type="module">`.
 - Pension default starting age: 67.
 - Sale fees and sale capital gains tax: 0% by default.
 - 4% rule: applied to liquid investable assets (stocks + bonds + crypto), excluding cash.
-- Drawdown order across asset classes: proportional by current value.
+- Drawdown order across asset classes: cash first, then proportional by current
+  value across stocks/bonds/crypto.
 - Drawdown order across lots within a class: HIFO.
 - Persistence: localStorage + JSON import/export.
 - UI: single page, vanilla JS, Chart.js via CDN.

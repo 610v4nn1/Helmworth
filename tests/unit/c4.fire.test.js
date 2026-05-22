@@ -82,19 +82,37 @@ export default function run({ test, assert, assertClose, assertDeepEqual }) {
   // -------------------------------------------------------------------------
   // drawdownYear
   // -------------------------------------------------------------------------
-  test('TC4.11: 100k stocks + 100k bonds + 10k cash, shortfall 8k → 4k each from S+B', () => {
+  test('TC4.11: 100k stocks + 100k bonds + 10k cash, shortfall 8k → cash drained first', () => {
     const stocks = createStocks({ value: 100000, capitalGainsTaxRate: 0 });
     const bonds  = createBonds({  value: 100000, capitalGainsTaxRate: 0 });
     const cash   = createCash({   value: 10000 });
     const result = drawdownYear([stocks, bonds, cash], 8000);
     assert(result.success);
-    // proportional: stocks 50%, bonds 50% → 4000 each
+    // Cash is drained first; stocks/bonds untouched because cash covers the
+    // entire 8k shortfall.
     const stocksAfter = result.updatedAssets.find((a) => a.class === 'stocks');
     const bondsAfter  = result.updatedAssets.find((a) => a.class === 'bonds');
     const cashAfter   = result.updatedAssets.find((a) => a.class === 'cash');
+    assertClose(stocksAfter.lots.reduce((s,l)=>s+l.value,0), 100000, 1e-6, 'stocks untouched');
+    assertClose(bondsAfter.lots.reduce((s,l)=>s+l.value,0), 100000, 1e-6, 'bonds untouched');
+    assertClose(cashAfter.value, 2000, 1e-6, 'cash drained from 10k → 2k');
+    assertClose(result.taxPaid, 0, 1e-9, 'cash sales pay no tax');
+  });
+
+  test('TC4.11b: shortfall larger than cash → cash drained, then S/B proportional', () => {
+    // 100k stocks + 100k bonds + 10k cash, shortfall 18k. Cash covers 10k,
+    // remaining 8k split 50/50 across stocks/bonds → 4k from each.
+    const stocks = createStocks({ value: 100000, capitalGainsTaxRate: 0 });
+    const bonds  = createBonds({  value: 100000, capitalGainsTaxRate: 0 });
+    const cash   = createCash({   value: 10000 });
+    const result = drawdownYear([stocks, bonds, cash], 18000);
+    assert(result.success);
+    const stocksAfter = result.updatedAssets.find((a) => a.class === 'stocks');
+    const bondsAfter  = result.updatedAssets.find((a) => a.class === 'bonds');
+    const cashAfter   = result.updatedAssets.find((a) => a.class === 'cash');
+    assertClose(cashAfter.value, 0, 1e-6, 'cash fully drained');
     assertClose(stocksAfter.lots.reduce((s,l)=>s+l.value,0), 96000, 1.0);
     assertClose(bondsAfter.lots.reduce((s,l)=>s+l.value,0), 96000, 1.0);
-    assertClose(cashAfter.value, 10000, 1e-6); // cash untouched
   });
 
   test('TC4.12: shortfall exceeds liquid + cash → success=false', () => {
