@@ -1661,7 +1661,6 @@ input, select { font-family: inherit; color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: var(--gap-xs);
-  margin-left: auto;
 }
 
 .header-nav-link {
@@ -1702,13 +1701,6 @@ input, select { font-family: inherit; color: inherit; }
   color: #fff;
   background: var(--grad-brand-dark);
 }
-
-/* The home page exposes an io-toolbar at the right of the header.
-   Push the nav next to the brand and let the toolbar keep its right anchor. */
-.app-header { display: flex; align-items: center; gap: var(--gap-md); }
-.app-header .brand { display: inline-flex; align-items: center; }
-.app-header .io-toolbar { margin-left: auto; }
-.app-header .header-nav + .io-toolbar { margin-left: var(--gap-md); }
 
 @media (max-width: 720px) {
   .header-nav-link {
