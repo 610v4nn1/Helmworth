@@ -73,6 +73,8 @@ const suites = [
   ['C6 Engine.md',      './docs/engine-md.test.js'],
   ['C6 API sync',       './docs/api-doc-sync.test.js'],
   ['C6 Cross-refs',     './docs/cross-refs.test.js'],
+  ['C6 Factory-fields', './docs/factory-fields-doc-sync.test.js'],
+  ['C6 Methodology',    './docs/methodology-cross-refs.test.js'],
   ['U2 Chart',          './unit/u2.chart.test.js'],
   ['U3 Import/Export',  './unit/u3.imex.test.js'],
   ['U4 SaleConversion', './unit/u4.saleConversion.test.js'],

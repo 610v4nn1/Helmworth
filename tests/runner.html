@@ -79,6 +79,8 @@
     import c6EngineMdTests from './docs/engine-md.test.js';
     import c6ApiSyncTests from './docs/api-doc-sync.test.js';
     import c6CrossRefTests from './docs/cross-refs.test.js';
+    import c6FactoryFieldsSyncTests from './docs/factory-fields-doc-sync.test.js';
+    import c6MethodologyCrossRefTests from './docs/methodology-cross-refs.test.js';
     import u2ChartTests from './unit/u2.chart.test.js';
     import u3ImexTests from './unit/u3.imex.test.js';
     import u4SaleConvTests from './unit/u4.saleConversion.test.js';
@@ -226,6 +228,14 @@
       log('\nRunning C6: cross-references tests...');
       try { await c6CrossRefTests(testContext); }
       catch (err) { log(`C6 Cross-refs suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: factory fields doc-sync tests...');
+      try { await c6FactoryFieldsSyncTests(testContext); }
+      catch (err) { log(`C6 Factory-fields suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: methodology cross-refs tests...');
+      try { await c6MethodologyCrossRefTests(testContext); }
+      catch (err) { log(`C6 Methodology cross-refs suite error: ${err.message}`, true); }
 
       log('\nRunning U2: Chart data tests...');
       try { await u2ChartTests(testContext); }

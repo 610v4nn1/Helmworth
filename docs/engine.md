@@ -150,7 +150,8 @@ passiveIncome = 0   // dividends not modelled separately in v1
 `costBasis` is captured per lot, distinct from `value` — the user provides it
 when creating or editing the asset (positions with unrealised gains have
 `costBasis < value`), and it stays untouched by yearly growth so the HIFO
-drawdown tax math reflects the actual gain.
+drawdown tax math reflects the actual gain. Sales realise the per-lot gain
+at `capitalGainsTaxRate`; see [Drawdown algorithm](#drawdown-algorithm).
 
 **Worked example** (TC2.6): 10 years at 7 % from 10 000, no contribution →
 `10 000 · 1.07¹⁰ ≈ 19 671.51`.
@@ -176,16 +177,23 @@ If applyContribution and c_y > 0:
 
 `costBasis` is per lot, captured at creation / edit time, and is independent
 of `value`. The new contribution lot does **not** earn yield in the year it
-is added.
+is added. On sale, gains are taxed at `capitalGainsTaxRate`; see
+[Drawdown algorithm](#drawdown-algorithm).
 
 **Worked example** (TC2.8): 100 000 at 4 % yield, 20 % tax →
 `100 000 · 0.04 · 0.80 = 3 200`.
 
 ### Crypto
 
-Mathematically identical to [Stocks](#stocks) (including the
-`contributionGrowthRate` term `c · (1 + g)^y`); see
-[`stepCrypto`](../src/engine/steps/crypto.js).
+Implemented by [`stepCrypto`](../src/engine/steps/crypto.js).
+
+Mathematically identical to [Stocks](#stocks): the same per-lot growth rule
+applies with `avgReturnRate`, the same contribution scaling
+`c_y = yearlyContribution · (1 + contributionGrowthRate)^year` produces a
+new lot at year-end with matching `value` and `costBasis`, and
+`capitalGainsTaxRate` is realised on sale. The class is kept separate for
+clarity and so future on-chain-yield extensions don't have to fork the
+stocks logic.
 
 ### Cash
 
@@ -235,6 +243,12 @@ mortgage 250 000 with 4 % yearly debt reduction, yearlyCosts 4 000 →
 `value' = 408 000`, `mortgageBalance' = 240 000`, `passiveIncome = 0`,
 `extraExpense = 4 000`.
 
+Optional sale parameters carried by the asset (used by
+[Sale events](#sale-events)): `saleYearsFromNow` triggers a sale in that
+specific year, `saleFeesPct` and `saleCapitalGainsTaxRate` set the
+brokerage fee and CGT applied at that time, and `saleConversion` directs
+the proceeds (default: a new `cash` lot).
+
 ### Private business
 
 Implemented by [`stepPrivateBusiness`](../src/engine/steps/privateBusiness.js).
@@ -251,6 +265,10 @@ yearlyDividend'   = D · (1 + gd)           // grows after payout
 **Worked example** (TC2.14): value 200 000 at 5 %, dividend 10 000 at 3 %
 growth, 26 % tax → year 1 income `7 400`, value `210 000`, next dividend
 `10 300`.
+
+Optional sale parameters mirror real estate's: `saleYearsFromNow`,
+`saleFeesPct`, `saleCapitalGainsTaxRate`, and `saleConversion` are read by
+[Sale events](#sale-events) on the matching year.
 
 ### Pension
 
