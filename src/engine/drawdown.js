@@ -167,9 +167,18 @@ export function drawdownYear(assets, shortfall) {
   let result = assets.map(deepCloneAsset);
   let drawn = 0;
   let taxPaid = 0;
+  // Per-class breakdown of *net* cash drawn to cover the shortfall. Only the
+  // four liquid classes can ever appear here; the others stay at 0.
+  const drawnByClass = { cash: 0, stocks: 0, bonds: 0, crypto: 0 };
 
   if (shortfall <= 0) {
-    return { updatedAssets: result, drawn: 0, success: true, taxPaid: 0 };
+    return {
+      updatedAssets: result,
+      drawn: 0,
+      success: true,
+      taxPaid: 0,
+      drawnByClass,
+    };
   }
 
   let remaining = shortfall;
@@ -180,6 +189,7 @@ export function drawdownYear(assets, shortfall) {
     const take = Math.min(a.value, remaining);
     a.value -= take;
     drawn += take;
+    drawnByClass.cash += take;
     remaining -= take;
   }
 
@@ -216,6 +226,7 @@ export function drawdownYear(assets, shortfall) {
           const sale = sellLotsHIFO(asset.lots, assetShare, asset.capitalGainsTaxRate ?? 0);
           asset.lots = sale.updatedLots;
           drawn += sale.netProceeds;
+          drawnByClass[cls] += sale.netProceeds;
           netFromLiquid += sale.netProceeds;
           taxPaid += sale.taxPaid;
         }
@@ -225,7 +236,7 @@ export function drawdownYear(assets, shortfall) {
   }
 
   const success = remaining <= 1e-6;
-  return { updatedAssets: result, drawn, success, taxPaid };
+  return { updatedAssets: result, drawn, success, taxPaid, drawnByClass };
 }
 
 function deepCloneAsset(a) {
