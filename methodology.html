@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methodology — Helmworth</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- MathJax for rigorous math rendering -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        processEscapes: true,
+        tags: 'none'
+      },
+      svg: { fontCache: 'global' },
+      options: { renderActions: { addMenu: [] } }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="methodology-body">
+  <header class="app-header">
+    <div class="brand">
+      <a class="brand-link" href="index.html" aria-label="Helmworth home">
+        <svg class="brand-mark" width="56" height="56" viewBox="-4 -10 52 54" role="img" aria-hidden="true" focusable="false" overflow="visible">
+          <defs>
+            <linearGradient id="brand-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"   stop-color="#0a66c2"/>
+              <stop offset="55%"  stop-color="#378fe9"/>
+              <stop offset="100%" stop-color="#71b7fb"/>
+            </linearGradient>
+            <linearGradient id="brand-trail" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.0"/>
+              <stop offset="55%"  stop-color="#ffffff" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="#ffe9a8" stop-opacity="1"/>
+            </linearGradient>
+            <filter id="brand-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.6" result="b"/>
+              <feMerge>
+                <feMergeNode in="b"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <rect x="1" y="1" width="38" height="38" rx="10" ry="10" fill="url(#brand-grad)"/>
+          <g stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9">
+            <circle cx="20" cy="20" r="8.5" stroke-width="1.6"/>
+            <circle cx="20" cy="20" r="2.2" stroke-width="1.4" fill="#ffffff"/>
+            <line x1="20" y1="11.5" x2="20" y2="8.5"  stroke-width="1.6"/>
+            <line x1="20" y1="28.5" x2="20" y2="31.5" stroke-width="1.6"/>
+            <line x1="11.5" y1="20" x2="8.5"  y2="20" stroke-width="1.6"/>
+            <line x1="28.5" y1="20" x2="31.5" y2="20" stroke-width="1.6"/>
+          </g>
+          <g fill="#ffffff" opacity="0.9">
+            <circle cx="20" cy="8.2"  r="1.1"/>
+            <circle cx="20" cy="31.8" r="1.1"/>
+            <circle cx="8.2"  cy="20" r="1.1"/>
+            <circle cx="31.8" cy="20" r="1.1"/>
+          </g>
+          <path d="M6 32 C 14 32, 20 30, 25 24 S 34 8, 44 -6"
+                fill="none" stroke="#ffffff" stroke-opacity="0.30"
+                stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+                filter="url(#brand-glow)"/>
+          <path d="M6 32 C 14 32, 20 30, 25 24 S 34 8, 44 -6"
+                fill="none" stroke="url(#brand-trail)" stroke-width="2.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="44" cy="-6" r="2.8" fill="#ffe9a8"/>
+          <circle cx="44" cy="-6" r="1.2" fill="#ffffff"/>
+        </svg>
+        <span class="brand-wordmark">
+          <span class="brand-name">Helm<span class="accent">worth</span></span>
+          <span class="tagline">Steer your net worth to financial independence.</span>
+        </span>
+      </a>
+    </div>
+    <nav class="header-nav" aria-label="Primary">
+      <a class="header-nav-link" href="index.html">Planner</a>
+      <a class="header-nav-link is-active" href="methodology.html" aria-current="page">Methodology</a>
+    </nav>
+  </header>
+
+  <!-- DISCLAIMER BANNER -->
+  <div class="disclaimer-banner" role="alert" aria-live="polite">
+    <div class="disclaimer-inner">
+      <span class="disclaimer-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M8 10c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5c0 2-2 2.5-3 3.5-.5.5-1 1-1 2"></path>
+          <line x1="12" y1="17" x2="12" y2="17.01"></line>
+        </svg>
+      </span>
+      <div class="disclaimer-text">
+        <strong>Heads up:</strong> The formulas below are a deliberate simplification of reality.
+        Tax rates, mortgage amortisation, and market growth are modelled as deterministic yearly
+        steps. Use this as a planning lens, not a financial recommendation.
+      </div>
+    </div>
+  </div>
+
+  <main class="app-main methodology-main">
+
+    <!-- HERO -->
+    <section class="card-section methodology-hero">
+      <span class="hero-eyebrow">Methodology</span>
+      <h1 class="hero-title">How Helmworth projects your net&nbsp;worth</h1>
+      <p class="hero-lead">
+        Every number you see in the planner — current net worth, the projection
+        chart, the stats table, your Coast&nbsp;FIRE and FIRE ages — is produced
+        by a small, pure calculation engine. This page documents <em>exactly</em>
+        what that engine does, in math.
+      </p>
+      <ul class="hero-bullets">
+        <li>Time is <strong>discrete and yearly</strong>. Year \(0\) is today; year \(y\) is the end of year \(y\).</li>
+        <li>All <strong>rates are decimals</strong> in the engine: \(0.07\) means 7&nbsp;%.</li>
+        <li>Every formula is <strong>pure</strong>: same inputs always produce the same outputs.</li>
+        <li>Default horizon age: \(100\). Default retirement age: \(67\). Safe withdrawal rate: \(0.04\).</li>
+      </ul>
+    </section>
+
+    <!-- TOC -->
+    <section class="card-section methodology-toc">
+      <h2 class="section-title">Contents</h2>
+      <ol class="toc-list">
+        <li><a href="#notation">Notation &amp; conventions</a></li>
+        <li><a href="#data-model">Data model</a></li>
+        <li><a href="#net-worth">Net worth</a></li>
+        <li><a href="#inflation">Inflation</a></li>
+        <li><a href="#time-stepping">Yearly time-stepping (Standard)</a></li>
+        <li><a href="#per-class">Per-asset-class step functions</a></li>
+        <li><a href="#passive-income">Passive income aggregation</a></li>
+        <li><a href="#sales">Sale events</a></li>
+        <li><a href="#drawdown">Drawdown &amp; HIFO sale algorithm</a></li>
+        <li><a href="#coast-fire">Coast FIRE</a></li>
+        <li><a href="#fire">FIRE</a></li>
+        <li><a href="#stats">Stats table</a></li>
+      </ol>
+    </section>
+
+    <!-- 1. Notation -->
+    <section id="notation" class="card-section prose">
+      <h2 class="section-title">1. Notation &amp; conventions</h2>
+      <table class="def-table">
+        <thead>
+          <tr><th>Symbol</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>\(a\)</td><td>An asset (one of eight classes; see &sect;2).</td></tr>
+          <tr><td>\(A\)</td><td>The full set of assets currently held.</td></tr>
+          <tr><td>\(y\)</td><td>Year index, \(y \in \{0, 1, \ldots, H - a_0\}\).</td></tr>
+          <tr><td>\(a_0\)</td><td>The user's starting age, <code>userInfo.age</code>.</td></tr>
+          <tr><td>\(H\)</td><td>Horizon age (default \(100\)).</td></tr>
+          <tr><td>\(R\)</td><td>Retirement age (default \(67\)).</td></tr>
+          <tr><td>\(m_0\)</td><td>Today's monthly expenses, <code>userInfo.monthlyExpenses</code>.</td></tr>
+          <tr><td>\(\iota\)</td><td>Inflation rate (decimal), <code>userInfo.inflationRate</code>.</td></tr>
+          <tr><td>\(\ell\)</td><td>A single lot, \(\ell = (\text{value}, \text{costBasis}, \text{year})\).</td></tr>
+          <tr><td>\(\Pi_y\)</td><td>Total passive income produced in year \(y\).</td></tr>
+          <tr><td>\(E_y\)</td><td>Total expenses in year \(y\) (includes residence costs).</td></tr>
+          <tr><td>\(D_y\)</td><td>Total personal-debt payments made during year \(y\).</td></tr>
+          <tr><td>\(W_y\)</td><td>Net worth at the end of year \(y\).</td></tr>
+        </tbody>
+      </table>
+      <p class="note">
+        Throughout this page, \(x'\) denotes the value of \(x\) <em>after</em> the yearly step.
+        The expression \((1+r)^n\) is computed with <code>Math.pow</code>. Capital losses never
+        produce a tax credit: gains are clamped at \(0\) before applying CGT.
+      </p>
+    </section>
+
+    <!-- 2. Data model -->
+    <section id="data-model" class="card-section prose">
+      <h2 class="section-title">2. Data model</h2>
+      <p>The engine consumes the following state:</p>
+      <pre class="code-block"><code>state = {
+  userInfo: {
+    age:             integer,
+    retirementAge:   integer,    // default 67
+    country:         string,
+    monthlyExpenses: number &ge; 0,
+    inflationRate:   decimal,    // e.g. 0.02
+  },
+  assets: Asset[],
+}</code></pre>
+
+      <p>There are eight asset classes. Their net-worth contribution is:</p>
+
+      <div class="table-wrap">
+      <table class="def-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Liquid?</th>
+            <th>Lots?</th>
+            <th>Net-worth contribution \(\nu(a)\)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="cls cls-stocks">stocks</span></td>          <td>yes</td><td>yes</td><td>\(\sum_{\ell \in a} \ell.\text{value}\)</td></tr>
+          <tr><td><span class="cls cls-bonds">bonds</span></td>            <td>yes</td><td>yes</td><td>\(\sum_{\ell \in a} \ell.\text{value}\)</td></tr>
+          <tr><td><span class="cls cls-crypto">crypto</span></td>          <td>yes</td><td>yes</td><td>\(\sum_{\ell \in a} \ell.\text{value}\)</td></tr>
+          <tr><td><span class="cls cls-cash">cash</span></td>              <td>yes</td><td>no</td> <td>\(a.\text{value}\)</td></tr>
+          <tr><td><span class="cls cls-realEstate">realEstate</span></td>  <td>no</td> <td>no</td> <td>\(a.\text{value} - a.\text{mortgageBalance}\)</td></tr>
+          <tr><td><span class="cls cls-privateBusiness">privateBusiness</span></td><td>no</td><td>no</td><td>\(a.\text{value}\)</td></tr>
+          <tr><td><span class="cls cls-pension">pension</span></td>        <td>n/a</td><td>no</td> <td>\(0\) (income-only)</td></tr>
+          <tr><td><span class="cls cls-personalDebt">personalDebt</span></td><td>n/a</td><td>no</td><td>\(-\,a.\text{balance}\)</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>
+        A <strong>lot</strong> is a single purchase: \(\ell = (\text{value},\ \text{costBasis},\ \text{year})\).
+        Adding a contribution appends a new lot whose cost basis equals the contributed amount.
+        Lots are required for the HIFO drawdown described in &sect;9.
+      </p>
+    </section>
+
+    <!-- 3. Net worth -->
+    <section id="net-worth" class="card-section prose">
+      <h2 class="section-title">3. Net worth</h2>
+      <p>Net worth is the sum of per-asset contributions:</p>
+      \[
+        W(A) \;=\; \sum_{a \in A} \nu(a)
+      \]
+      <p>Equivalently, expanded by class:</p>
+      \[
+        W \;=\; \big(S + B + C + \$ + \mathrm{RE}_{\text{val}} + \mathrm{PB}_{\text{val}}\big)
+              \;-\; \big(\mathrm{Debt} + \mathrm{Mortgage}\big)
+      \]
+      <p>
+        where \(S, B, C\) are the lot-summed values of stocks, bonds, and crypto; \(\$\) is cash;
+        \(\mathrm{RE}_{\text{val}}\) and \(\mathrm{PB}_{\text{val}}\) are the gross values of real
+        estate and private business; \(\mathrm{Mortgage}\) is the sum of outstanding mortgage
+        balances; and \(\mathrm{Debt}\) is the sum of personal-debt balances.
+      </p>
+    </section>
+
+    <!-- 4. Inflation -->
+    <section id="inflation" class="card-section prose">
+      <h2 class="section-title">4. Inflation</h2>
+      <p>Monthly expenses grow geometrically:</p>
+      \[
+        m_y \;=\; m_0 \cdot (1 + \iota)^{\,y}
+      \]
+      <p class="note">
+        Asset values are <em>not</em> inflated by \(\iota\). Each asset class has its own
+        growth rate (appreciation, dividend growth, pension revaluation) applied inside its
+        step function. This avoids double-counting.
+      </p>
+    </section>
+
+    <!-- 5. Time stepping -->
+    <section id="time-stepping" class="card-section prose">
+      <h2 class="section-title">5. Yearly time-stepping (Standard scenario)</h2>
+      <p>
+        The simulator returns a trajectory of length \(H - a_0 + 1\). Index \(0\) is the starting
+        snapshot (no growth applied); index \(y \ge 1\) is the end of year \(y\).
+      </p>
+
+      <h3 class="subsection-title">5.1 Year \(0\) — snapshot</h3>
+      \[
+        W_0 = \sum_{a \in A} \nu(a), \qquad
+        \Pi_0 = 0, \qquad
+        E_0 = 12 \cdot m_0, \qquad
+        D_0 = 0
+      \]
+
+      <h3 class="subsection-title">5.2 Year \(y \in \{1, \ldots, H - a_0\}\)</h3>
+      <p>
+        Define the per-year context \(\mathrm{ctx} = (y,\ a_0 + y,\ \mathbb{1}_{\text{contrib}})\)
+        — the year index, the user's current age, and a contribution flag. For the Standard
+        scenario, \(\mathbb{1}_{\text{contrib}}\) is true while \(a_0 + y\) is below the
+        retirement cutoff and false afterward.
+      </p>
+
+      <p>For each asset \(a\), call its class-specific step function (&sect;6):</p>
+      \[
+        (a',\ \pi_a,\ \kappa_a,\ \delta_a) \;=\; \mathrm{step}_{\mathrm{class}(a)}(a,\ \mathrm{ctx})
+      \]
+      <p>
+        where \(\pi_a\) is the asset's passive income, \(\kappa_a\) is an extra expense
+        (only set by residence real-estate; \(0\) otherwise), and \(\delta_a\) is the asset's
+        debt payment for the year (only set by <code>personalDebt</code>; \(0\) otherwise).
+      </p>
+
+      <p>After stepping, sales scheduled for year \(y\) fire (&sect;8). Then aggregate:</p>
+
+      \[
+        \begin{aligned}
+          \Pi_y &= \sum_{a} \pi_a, &\qquad
+          D_y   &= \sum_{a:\ \mathrm{class}(a)=\text{personalDebt}} \delta_a, \\
+          K_y   &= \sum_{a:\ \text{residence}} \kappa_a, &\qquad
+          E_y   &= 12 \cdot m_0 \cdot (1 + \iota)^{y} \;+\; K_y, \\
+          W_y   &= W(A')
+        \end{aligned}
+      \]
+
+      <p class="note">
+        The Standard scenario stops contributions automatically once
+        \(a_0 + y \ge \min\!\big(\,\text{retirementAge},\ \min\{\text{pension.startingAge}\},\ 67\big)\).
+        Coast&nbsp;FIRE (&sect;10) and FIRE (&sect;11) override this rule.
+      </p>
+    </section>
+
+    <!-- 6. Per-class steps -->
+    <section id="per-class" class="card-section prose">
+      <h2 class="section-title">6. Per-asset-class step functions</h2>
+      <p>
+        Each \(\mathrm{step}_X(a, \mathrm{ctx})\) is pure and returns
+        \((a',\ \pi)\), plus optional \(\kappa\) (residence) or \(\delta\)
+        (personal debt). Below, all variables refer to fields of \(a\).
+      </p>
+
+      <!-- Stocks -->
+      <h3 class="subsection-title">6.1 Stocks</h3>
+      <p>Parameters: average return \(r\), yearly contribution \(c\).</p>
+      <p>For every existing lot \(\ell\):</p>
+      \[
+        \ell.\text{value}' = \ell.\text{value} \cdot (1 + r), \qquad
+        \ell.\text{costBasis}' = \ell.\text{costBasis}, \qquad
+        \ell.\text{year}' = \ell.\text{year}
+      \]
+      <p>If \(\mathbb{1}_{\text{contrib}} \wedge c > 0\), append a new lot:</p>
+      \[
+        \ell_{\mathrm{new}} = (c,\ c,\ y), \qquad \pi = 0
+      \]
+      <p class="example">
+        <strong>Example.</strong> 10 years of 7&nbsp;% growth on \(10\,000\) with no contribution:
+        \(10\,000 \cdot 1.07^{10} \approx 19\,671.51\).
+      </p>
+
+      <!-- Bonds -->
+      <h3 class="subsection-title">6.2 Bonds</h3>
+      <p>Parameters: yield \(\rho\), yield-tax rate \(\tau_\rho\), yearly contribution \(c\).</p>
+      <p>Yield is computed on the value <em>before</em> the new contribution lot is added:</p>
+      \[
+        V \;=\; \sum_{\ell} \ell.\text{value}, \qquad
+        \pi \;=\; V \cdot \rho \cdot (1 - \tau_\rho)
+      \]
+      <p>Existing lots are kept flat (no appreciation in v1):</p>
+      \[
+        \ell.\text{value}' = \ell.\text{value}, \qquad \ell.\text{costBasis}' = \ell.\text{costBasis}
+      \]
+      <p>If \(\mathbb{1}_{\text{contrib}} \wedge c > 0\), append \(\ell_{\mathrm{new}} = (c, c, y)\).</p>
+      <p class="example">
+        <strong>Example.</strong> \(100\,000\) at 4&nbsp;% yield with 20&nbsp;% yield tax:
+        \(100\,000 \cdot 0.04 \cdot 0.80 = 3\,200\).
+      </p>
+
+      <!-- Crypto -->
+      <h3 class="subsection-title">6.3 Crypto</h3>
+      <p>
+        Mathematically identical to <em>Stocks</em>: lots grow by \((1 + r)\), optional
+        contribution lot, and \(\pi = 0\). The class is kept separate to allow future
+        extensions (staking, on-chain yield, etc.).
+      </p>
+
+      <!-- Cash -->
+      <h3 class="subsection-title">6.4 Cash</h3>
+      \[
+        \text{value}' = \text{value}, \qquad \pi = 0
+      \]
+      <p class="note">
+        Cash earns no interest in v1 — a deliberately conservative choice that makes the
+        opportunity cost of holding cash visible in the projection.
+      </p>
+
+      <!-- Real estate -->
+      <h3 class="subsection-title">6.5 Real estate</h3>
+      <p>
+        Parameters: appreciation \(\alpha\), mortgage balance \(M\), repayment fraction
+        \(\rho_M\), cash flow \(\mathrm{CF}\), yearly costs \(K\), kind
+        \(\kappa_p \in \{\text{investment},\ \text{residence}\}\).
+      </p>
+      \[
+        \text{value}' = \text{value} \cdot (1 + \alpha), \qquad
+        M' = \max\!\big(0,\ M \cdot (1 - \rho_M)\big)
+      \]
+      <p>Income / expense splits by kind:</p>
+      \[
+        \pi \;=\;
+        \begin{cases}
+          \mathrm{CF} & \text{if } \kappa_p = \text{investment} \\
+          0           & \text{if } \kappa_p = \text{residence}
+        \end{cases}
+        \qquad
+        \kappa_a \;=\;
+        \begin{cases}
+          0 & \text{if } \kappa_p = \text{investment} \\
+          K & \text{if } \kappa_p = \text{residence}
+        \end{cases}
+      \]
+      <p class="note">
+        The mortgage has <em>no</em> interest accrual in this model — a fixed fraction
+        \(\rho_M\) of the outstanding balance is repaid each year. For investment property,
+        any interest the user actually pays is expected to already be netted into
+        \(\mathrm{CF}\), which may be negative.
+      </p>
+
+      <!-- Private business -->
+      <h3 class="subsection-title">6.6 Private business</h3>
+      <p>
+        Parameters: value growth \(g\), yearly dividend \(D\), dividend growth \(g_D\),
+        dividend-tax rate \(\tau_D\).
+      </p>
+      <p>The current year's dividend is paid <em>before</em> growth is applied to \(D\):</p>
+      \[
+        \pi = D \cdot (1 - \tau_D), \qquad
+        \text{value}' = \text{value} \cdot (1 + g), \qquad
+        D' = D \cdot (1 + g_D)
+      \]
+
+      <!-- Pension -->
+      <h3 class="subsection-title">6.7 Pension</h3>
+      <p>
+        Parameters: yearly amount \(P\), revaluation rate \(\rho_P\), starting age \(s\).
+        Let \(\mathrm{age} = a_0 + y\) be the user's current age.
+      </p>
+      \[
+        \pi \;=\;
+        \begin{cases}
+          0 & \text{if } \mathrm{age} < s \\[2pt]
+          P \cdot (1 + \rho_P)^{\,\mathrm{age} - s} & \text{if } \mathrm{age} \ge s
+        \end{cases}
+        \qquad
+        a' = a
+      \]
+      <p class="note">
+        Pension contributes <strong>nothing</strong> to net worth (it is an income flow with
+        no balance to sell). The amount is treated as net of tax: users should set \(P\) to
+        their take-home figure.
+      </p>
+
+      <!-- Personal debt -->
+      <h3 class="subsection-title">6.8 Personal debt</h3>
+      <p>
+        Parameters: balance \(b\), annual interest \(r\), monthly payment \(P\), monthly
+        rate \(r_m = r / 12\).
+      </p>
+      <p>The balance is updated monthly (12 sub-steps per simulated year). For each \(m \in \{0, \ldots, 11\}\) while \(b > 0\):</p>
+      \[
+        b_{\mathrm{grown}} = b \cdot (1 + r_m)
+      \]
+      \[
+        \mathrm{pay}_m =
+        \begin{cases}
+          b_{\mathrm{grown}} & \text{if } b_{\mathrm{grown}} \le P \quad \text{(final partial payment)} \\
+          P                  & \text{otherwise}
+        \end{cases}
+      \]
+      \[
+        b_{m+1} =
+        \begin{cases}
+          0                            & \text{if } b_{\mathrm{grown}} \le P \\
+          b_{\mathrm{grown}} - P       & \text{otherwise}
+        \end{cases}
+      \]
+      <p>Yearly aggregates:</p>
+      \[
+        \delta_a = \sum_{m=0}^{11} \mathrm{pay}_m, \qquad \pi = 0
+      \]
+      <p class="note">
+        \(\delta_a\) is reported separately — it is a <em>drag on cash flow</em>, not passive
+        income. Once the balance reaches \(0\), no further payments accrue.
+      </p>
+      <p class="example">
+        <strong>Example.</strong> \(b = 10\,000\), \(r = 12\,\%\) (so \(r_m = 1\,\%\)), \(P = 500\):
+        after 12 monthly steps, \(b \approx 4\,734.26\).
+      </p>
+    </section>
+
+    <!-- 7. Passive income -->
+    <section id="passive-income" class="card-section prose">
+      <h2 class="section-title">7. Passive income aggregation</h2>
+      <p>For a given year \(y\) and asset set \(A\):</p>
+      \[
+        \Pi^{(c)}_y \;=\; \sum_{a:\ \mathrm{class}(a)=c} \pi_a, \qquad
+        \Pi_y \;=\; \sum_{c} \Pi^{(c)}_y
+      \]
+      <p>
+        This breakdown drives the per-class series in the chart and stats table. The total
+        \(\Pi_y\) is what the engine compares against expenses when deciding whether
+        drawdown is required.
+      </p>
+    </section>
+
+    <!-- 8. Sales -->
+    <section id="sales" class="card-section prose">
+      <h2 class="section-title">8. Sale events</h2>
+      <p>
+        Real-estate and private-business assets may carry a planned sale year. When
+        <code>saleYearsFromNow === y</code>, the sale fires <em>after</em> the per-class
+        step (and, in FIRE, before drawdown — so newly converted proceeds are immediately
+        drawdown-eligible).
+      </p>
+
+      <h3 class="subsection-title">8.1 Sale proceeds</h3>
+      <p>Let \(f\) be the sale fee fraction, \(\zeta\) the sale capital-gains-tax rate, and \(V_0\) the original purchase value (captured at asset creation):</p>
+      \[
+        \mathrm{fees} = f \cdot \text{value}, \qquad
+        \mathrm{gain} = \max(0,\ \text{value} - V_0), \qquad
+        \mathrm{tax}  = \zeta \cdot \mathrm{gain}
+      \]
+      \[
+        \mathrm{proceeds} =
+        \begin{cases}
+          \text{value} - \mathrm{fees} - \mathrm{tax} - M & \text{if class} = \text{realEstate} \\
+          \text{value} - \mathrm{fees} - \mathrm{tax}     & \text{if class} = \text{privateBusiness}
+        \end{cases}
+      \]
+      <p class="note">Capital losses (<code>value &lt; V<sub>0</sub></code>) do <strong>not</strong> generate a tax credit; the \(\max\) clamps the gain at \(0\).</p>
+
+      <h3 class="subsection-title">8.2 Conversion</h3>
+      <p>
+        The source asset's <code>saleConversion</code> field decides where the proceeds go.
+        In all cases the source asset is removed.
+      </p>
+      <ul class="bullet-list">
+        <li><strong>Target asset</strong> — append \((\text{proceeds},\ \text{proceeds},\ y)\) as a new lot on the target (which must be lot-bearing: stocks, bonds, or crypto).</li>
+        <li><strong>Inline parameters</strong> — create a brand-new asset of the requested class, seeded with the proceeds.</li>
+        <li><strong>Unset</strong> — proceeds become a new <em>cash</em> asset named "<code>&lt;source.name&gt; proceeds</code>". No value is ever lost.</li>
+      </ul>
+    </section>
+
+    <!-- 9. Drawdown -->
+    <section id="drawdown" class="card-section prose">
+      <h2 class="section-title">9. Drawdown &amp; HIFO sale algorithm</h2>
+      <p>
+        In the FIRE scenario, when the year's expenses plus debt payments exceed passive
+        income, the engine sells assets to cover the gap. Let \(S\) be the shortfall:
+      </p>
+      \[
+        S \;=\; E_y + D_y - \Pi_y \quad (S > 0 \text{ triggers drawdown})
+      \]
+
+      <h3 class="subsection-title">9.1 Drawdown order</h3>
+      <ol class="numbered-list">
+        <li>
+          <strong>Drain cash first</strong>, in list order:
+          \(\quad \mathrm{take}_a = \min(a.\text{value},\ S - \mathrm{drawn}), \quad
+          a.\text{value}' = a.\text{value} - \mathrm{take}_a.\)
+          Cash earns no return and pays no tax, so it has the lowest opportunity cost.
+        </li>
+        <li>
+          If still short, define liquid-investable totals
+          \(V_{\mathrm{liq}} = V_S + V_B + V_C\) where
+          \(V_c = \sum_{a:\ \mathrm{class}(a)=c} \sum_{\ell \in a} \ell.\text{value}\).
+          Allocate the remaining shortfall \(S_{\mathrm{rem}}\) <em>proportionally</em>:
+          \[ T_c = S_{\mathrm{rem}} \cdot \frac{V_c}{V_{\mathrm{liq}}}. \]
+        </li>
+        <li>
+          Within each class, distribute \(T_c\) across that class's assets in proportion to their values:
+          \[ T_a = T_c \cdot \frac{V_a}{\sum_{a' \in c} V_{a'}}. \]
+        </li>
+        <li>For each asset, run <strong>HIFO sale</strong> (&sect;9.2) to net \(T_a\) cash.</li>
+      </ol>
+
+      <p>The drawdown is successful iff:</p>
+      \[
+        S - \mathrm{drawn} \;\le\; \varepsilon, \qquad \varepsilon = 10^{-6}
+      \]
+      <p>If unsuccessful, the FIRE simulator records <code>failedAtAge = currentAge</code> and stops.</p>
+
+      <h3 class="subsection-title">9.2 HIFO sale within one asset</h3>
+      <p>
+        Lots are processed in <strong>HIFO</strong> order: highest cost basis first; ties
+        broken by ascending year for determinism. For each lot \(\ell\), while the cumulative
+        net proceeds are below the target by more than \(10^{-9}\):
+      </p>
+
+      <p>The per-unit gain ratio (gain dollars per dollar of <em>value</em> sold from this lot):</p>
+      \[
+        \gamma \;=\; \max\!\left(0,\ \frac{\ell.\text{value} - \ell.\text{costBasis}}{\ell.\text{value}}\right)
+      \]
+      <p>The effective tax rate on each unit of value sold, and the corresponding net ratio:</p>
+      \[
+        \tau_{\mathrm{eff}} \;=\; \gamma \cdot \mathrm{cgt}, \qquad
+        \eta \;=\; 1 - \tau_{\mathrm{eff}}
+      \]
+      <p>If \(\eta \le 0\), the lot is skipped (a pathological case where taxes wipe out proceeds).</p>
+
+      <p>Gross-up: how much gross value to sell from this lot so the <em>net</em> equals what we still need:</p>
+      \[
+        v \;=\; \min\!\left(\ell.\text{value},\ \frac{S_{\mathrm{rem}}}{\eta}\right)
+      \]
+
+      <p>Per-lot accounting:</p>
+      \[
+        \mathrm{gainSold}_\ell = v \cdot \gamma, \qquad
+        \mathrm{tax}_\ell      = \mathrm{gainSold}_\ell \cdot \mathrm{cgt}, \qquad
+        \mathrm{net}_\ell      = v - \mathrm{tax}_\ell
+      \]
+
+      <p>If \(\lvert v - \ell.\text{value} \rvert &lt; 10^{-9}\), the lot is fully consumed and dropped. Otherwise the surviving slice scales its cost basis proportionally:</p>
+      \[
+        \ell.\text{value}' = \ell.\text{value} - v, \qquad
+        \ell.\text{costBasis}' = \ell.\text{costBasis} \cdot \frac{\ell.\text{value} - v}{\ell.\text{value}}
+      \]
+
+      <p class="example">
+        <strong>Worked example.</strong> Two lots
+        \(\big[(1000,\ 600),\ (1000,\ 900)\big]\); we need \(500\) net at \(\mathrm{cgt} = 0.20\).
+        HIFO selects the \(\text{cb} = 900\) lot first.
+        \(\gamma = 100/1000 = 0.10\), \(\tau_{\mathrm{eff}} = 0.02\), \(\eta = 0.98\).
+        \(v = 500/0.98 \approx 510.20\). Tax \(\approx 10.20\). Net \(\approx 500.00\).
+        The lot with \(\text{cb} = 600\) is untouched.
+      </p>
+    </section>
+
+    <!-- 10. Coast FIRE -->
+    <section id="coast-fire" class="card-section prose">
+      <h2 class="section-title">10. Coast FIRE</h2>
+      <p>
+        <strong>Coast FIRE age</strong> is the earliest age \(X \ge a_0\) at which the user
+        can stop contributing and still meet the 4&nbsp;% rule at retirement age \(R\).
+      </p>
+
+      <h3 class="subsection-title">10.1 Piecewise simulation</h3>
+      <p>
+        \(\mathrm{simulateCoastFire}(s, X)\) is identical to the Standard simulation except for
+        the contribution flag, which becomes:
+      </p>
+      \[
+        \mathbb{1}_{\text{contrib}}(y) \;=\; \big(a_0 + y \le X\big)
+      \]
+
+      <h3 class="subsection-title">10.2 Retirement age \(R\)</h3>
+      <p>Determined by the first match in the following order:</p>
+      \[
+        R \;=\;
+        \begin{cases}
+          \mathrm{opts.retirementAge} & \text{if explicitly provided} \\
+          \mathrm{userInfo.retirementAge} & \text{if set on the profile} \\
+          \min\{\,a.\mathrm{startingAge} : \mathrm{class}(a) = \text{pension}\,\} & \text{if any pension exists} \\
+          67 & \text{otherwise (default)}
+        \end{cases}
+      \]
+
+      <h3 class="subsection-title">10.3 Feasibility test (4&nbsp;% rule)</h3>
+      <p>
+        Run \(\mathrm{simulateCoastFire}(s, X)\) until age \(R\). Let \(W(R; X)\) and
+        \(\Pi(R; X)\) be the resulting net worth and total passive income at retirement,
+        and \(E(R)\) the inflated yearly expenses (including residence costs):
+      </p>
+      \[
+        E(R) \;=\; 12 \cdot m_0 \cdot (1 + \iota)^{\,R - a_0} \;+\; \sum_{a:\ \text{residence}} a.\mathrm{yearlyCosts}
+      \]
+      <p>The user is feasible at stop-age \(X\) iff:</p>
+      \[
+        \boxed{\;\Pi(R; X) \;+\; 0.04 \cdot W(R; X) \;\ge\; E(R)\;}
+      \]
+
+      <h3 class="subsection-title">10.4 Search</h3>
+      <p>
+        Linear scan over \(X \in [a_0,\ \min(R,\ H)]\); return the smallest feasible \(X\),
+        or <code>null</code> if none exists. <strong>Monotonicity:</strong> if stopping at
+        \(X\) works, stopping any later than \(X\) also works (more accumulation, same
+        retirement target), so the search exits on the first true.
+      </p>
+    </section>
+
+    <!-- 11. FIRE -->
+    <section id="fire" class="card-section prose">
+      <h2 class="section-title">11. FIRE</h2>
+      <p>
+        FIRE asks a stronger question than Coast&nbsp;FIRE: not "can I coast to retirement?",
+        but "can I stop earning <em>now</em> and live off my portfolio for the rest of the
+        horizon?" This requires a year-by-year drawdown simulation rather than a single
+        snapshot at \(R\).
+      </p>
+
+      <h3 class="subsection-title">11.1 \(\mathrm{simulateFire}(s,\ X_{\text{start}})\)</h3>
+      <p>For \(y \in \{1, \ldots, H - a_0\}\):</p>
+      <ol class="numbered-list">
+        <li>\(\mathrm{inDecum} = (a_0 + y \ge X_{\text{start}})\).</li>
+        <li>Set \(\mathbb{1}_{\text{contrib}} = \neg\,\mathrm{inDecum}\) (contributions on before \(X_{\text{start}}\), off afterward).</li>
+        <li>Step every asset; aggregate \(\Pi_y\), \(D_y\), \(K_y\).</li>
+        <li>Apply year-\(y\) sales (&sect;8) <em>before</em> drawdown, so converted proceeds are spendable.</li>
+        <li>Compute expenses \(E_y = 12 \cdot m_0 \cdot (1+\iota)^y + K_y\).</li>
+        <li>
+          If <code>inDecum</code>, compute \(S_y = E_y + D_y - \Pi_y\). If \(S_y > 0\), call
+          <code>drawdownYear(A,\ S_y)</code> (&sect;9). If it fails, set
+          <code>failedAtAge = a<sub>0</sub> + y</code> and stop.
+        </li>
+      </ol>
+
+      <h3 class="subsection-title">11.2 \(\mathrm{findFireAge}(s)\)</h3>
+      <p>Linear scan from \(a_0\) to \(H\):</p>
+      \[
+        \mathrm{findFireAge}(s) \;=\; \min\!\big\{\, X \in [a_0,\,H] \;\big|\; \mathrm{simulateFire}(s,\ X).\mathrm{failedAtAge} = \mathrm{null} \,\big\}
+      \]
+      <p>(or <code>null</code> if no \(X\) succeeds).</p>
+      <p class="note">
+        This relies on the <strong>monotonicity assumption</strong>: if FIRE succeeds at
+        \(X\), it succeeds at \(X + k\) for all \(k \ge 0\). More accumulation and a shorter
+        decumulation horizon can only help. The assumption holds for typical inputs.
+      </p>
+    </section>
+
+    <!-- 12. Stats -->
+    <section id="stats" class="card-section prose">
+      <h2 class="section-title">12. Stats table</h2>
+      <p>
+        The stats table samples the Standard trajectory at fixed horizons \(\{h_1, h_2, \ldots\}\)
+        (default \(\{0, 5, 10, 20\}\)). For horizon \(h_i\):
+      </p>
+      \[
+        \mathrm{rows}[c][i] \;=\; \mathrm{trajectory}[h_i].\mathrm{byClass}[c]
+        \quad \text{(per non-pension class \(c\))}
+      \]
+      \[
+        \mathrm{rows.total}[i]           \;=\; \mathrm{trajectory}[h_i].W \;=\; W_{h_i}
+      \]
+      \[
+        \mathrm{rows.yearlyExpenses}[i]  \;=\; \mathrm{trajectory}[h_i].E \;=\; E_{h_i}
+      \]
+      \[
+        \mathrm{rows.monthlyExpenses}[i] \;=\; \frac{E_{h_i}}{12}
+      \]
+      <p>
+        The <em>pension</em> row is special: since \(\nu(\text{pension}) = 0\) for every
+        pension asset, a "net worth" entry would always be zero. Instead the table reports
+        the pension's <em>yearly income</em> at each horizon, growing by \((1+\rho_P)\) each
+        year after \(\mathrm{startingAge}\). The total row excludes pension by construction.
+      </p>
+    </section>
+
+    <!-- FOOTER -->
+    <section class="card-section methodology-footer">
+      <p>
+        <strong>Want to read the source?</strong> The calculation engine lives in
+        <code>src/engine/</code>. Every function listed here is exported from
+        <code>src/engine/index.js</code> — the frozen public API. Architectural and
+        documentation tests in <code>tests/arch/</code> and <code>tests/docs/</code> keep
+        these formulas in lock-step with the code.
+      </p>
+      <p class="footer-cta">
+        <a class="cta-link" href="index.html">&larr; Back to the planner</a>
+      </p>
+    </section>
+
+  </main>
+</body>
+</html>
