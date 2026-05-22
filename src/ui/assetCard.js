@@ -184,18 +184,35 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       }},
       children: 'Delete',
     }),
-    // Update — closes the expanded card. The card auto-saves on every
-    // field's `change` event, so this button only needs to call the same
-    // close path as the × button in the header. Behaviour and handler
-    // are deliberately identical to closeBtn above; if closeBtn closes
-    // on the first click, this one does too.
+    // Update — closes the expanded card. The expanded card auto-saves on
+    // every field's `change` event (the listener above defers the save
+    // to a microtask, so it doesn't tear down the DOM mid-click).
+    //
+    // We bind BOTH `mousedown` and `click`. The `mousedown` path is a
+    // safety net for Firefox/macOS, where focusing a <button> blurs the
+    // active input synchronously and can swallow the trailing `click`
+    // if anything ends up rebuilding the overlay between mousedown and
+    // mouseup. Closing on `mousedown` guarantees first-click response;
+    // the redundant `click` handler keeps keyboard activation
+    // (Enter/Space on a focused button) working too — by then the card
+    // is already closed and `onToggleExpand(null)` is a no-op.
     h('button', {
       className: 'update-btn',
       attrs: { type: 'button', 'aria-label': 'Close and apply changes' },
-      on: { click: (e) => {
-        e.stopPropagation();
-        onToggleExpand(null);
-      }},
+      on: {
+        mousedown: (e) => {
+          if (e.button !== 0) return; // primary (left) only
+          e.stopPropagation();
+          // We do NOT preventDefault — that would prevent focus changes
+          // and the natural input blur that fires `change`. We want
+          // `change` to still fire (deferred to a microtask).
+          onToggleExpand(null);
+        },
+        click: (e) => {
+          e.stopPropagation();
+          onToggleExpand(null);
+        },
+      },
       children: 'Update',
     }),
   ]});
