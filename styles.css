@@ -2003,3 +2003,137 @@ mjx-container { color: var(--fg-strong); }
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(10, 102, 194, 0.30);
 }
+
+
+/* =========================================================================
+   COVERAGE CHARTS — stacked bars showing how each year's expenses are
+   covered, by source (passive income per class + drawdown per class).
+   STYLE-ISOLATION INVARIANT: every selector below targets a class
+   introduced by this feature only (.coverage-* / .cov-*). It MUST NOT
+   redefine or extend any existing class used by the home page.
+   ========================================================================= */
+
+.coverage-lede {
+  margin: 0 0 var(--gap-md);
+  color: var(--fg-dim);
+  font-size: 0.97rem;
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
+.coverage-status {
+  display: block;
+  margin: 0 0 var(--gap-md);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--fg);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--li-blue-soft);
+  border-left: 3px solid var(--li-blue);
+  min-height: 1.2em;
+}
+
+.coverage-status:empty { display: none; }
+
+.coverage-status[data-tone="warn"] {
+  background: rgba(178, 64, 32, 0.10);
+  border-left-color: var(--accent-amber);
+  color: var(--fg);
+}
+
+.coverage-status[data-tone="muted"] {
+  background: var(--bg-soft);
+  border-left-color: var(--border-glow);
+  color: var(--fg-dim);
+}
+
+/* Chart canvas wrapper — fully self-contained styling so it cannot
+   share visual state with the existing .chart-wrap blocks. */
+.coverage-canvas {
+  position: relative;
+  height: 360px;
+  background: linear-gradient(180deg, var(--bg-soft) 0%, transparent 60%);
+  border-radius: var(--radius);
+  padding: var(--gap-sm);
+}
+
+/* Empty-state visual for the coverage canvas only. Uses its own class so
+   nothing about other charts on the page changes. */
+.coverage-canvas.coverage-canvas-empty {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 12px,
+      rgba(0, 0, 0, 0.025) 12px 24px
+    ),
+    var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coverage-canvas.coverage-canvas-empty canvas { display: none; }
+
+/* Coverage legend — its own block, mirroring the spacing of
+   .chart-annotations but without re-using that class so nothing leaks. */
+.coverage-legend {
+  margin-top: var(--gap-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--fg-dim);
+}
+
+.cov-legend-group {
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding: 0 0.25rem;
+}
+
+.cov-legend-group:not(:first-child) {
+  margin-left: var(--gap-sm);
+}
+
+.cov-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-xs);
+  padding: 0.25rem 0.65rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-weight: 500;
+  color: var(--fg);
+  font-size: 0.88rem;
+}
+
+.cov-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  margin-right: 0.45rem;
+  flex: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.cov-swatch-drawn {
+  border-style: dashed;
+  border-width: 1.2px;
+}
+
+.cov-swatch-line {
+  height: 3px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border-radius: 2px;
+  border: none;
+  box-shadow: none;
+}

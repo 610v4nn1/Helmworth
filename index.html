@@ -153,6 +153,39 @@
       <div id="assets-chart-legend" class="chart-annotations"></div>
     </section>
 
+    <!-- FIRE COVERAGE — how each year's expenses are covered after FIRE -->
+    <section id="fire-coverage" class="card-section">
+      <h2 class="section-title">Coverage after FIRE</h2>
+      <p class="coverage-lede">
+        After you reach FIRE, where does each year&rsquo;s spending come from?
+        Bars stack passive income (bonds yield, real-estate cash flow,
+        business dividends, pension) and the assets you&rsquo;d sell or drain
+        to cover the rest. The black line is your inflated yearly expenses
+        plus any debt payments.
+      </p>
+      <div id="fire-coverage-status" class="coverage-status"></div>
+      <div class="coverage-canvas">
+        <canvas id="fire-coverage-chart" aria-label="FIRE coverage chart"></canvas>
+      </div>
+      <div id="fire-coverage-legend" class="coverage-legend"></div>
+    </section>
+
+    <!-- RETIREMENT COVERAGE — same idea, but starting at retirementAge -->
+    <section id="retirement-coverage" class="card-section">
+      <h2 class="section-title">Coverage after retirement</h2>
+      <p class="coverage-lede">
+        Same view, but starting at your planned retirement age. Useful when
+        FIRE isn&rsquo;t the goal: it shows whether your pension and passive
+        income cover the bills, or how much you&rsquo;d still need to draw
+        from your portfolio each year.
+      </p>
+      <div id="retirement-coverage-status" class="coverage-status"></div>
+      <div class="coverage-canvas">
+        <canvas id="retirement-coverage-chart" aria-label="Retirement coverage chart"></canvas>
+      </div>
+      <div id="retirement-coverage-legend" class="coverage-legend"></div>
+    </section>
+
   </main>
 
   <!-- MODAL CONTAINER (asset picker + asset forms) -->

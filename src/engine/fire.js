@@ -56,9 +56,14 @@ function applyYearSales(assets, year) {
  * @property {Object<string,number>} byClass
  * @property {number} passiveIncome
  * @property {number} pensionIncome - Pension portion of passiveIncome (subset of passiveIncome).
+ * @property {Object<string,number>} passiveByClass - Passive income split by asset class
+ *   (keys: stocks, bonds, crypto, cash, realEstate, privateBusiness, pension, personalDebt).
+ *   Sum equals passiveIncome.
  * @property {number} expenses
  * @property {number} debtPayments
- * @property {number} drawnDown      - cash drawn from liquid assets this year
+ * @property {number} drawnDown      - net cash drawn from liquid assets this year
+ * @property {Object<string,number>} drawnByClass - Drawdown split by liquid class
+ *   (keys: cash, stocks, bonds, crypto). Sum equals drawnDown.
  * @property {boolean} drawdownOk    - whether drawdown succeeded
  */
 
@@ -111,6 +116,12 @@ export function simulateFire(state, opts) {
   const trajectory = [];
   let failedAtAge = null;
 
+  const emptyByClass = () => ({
+    stocks: 0, bonds: 0, crypto: 0, cash: 0,
+    realEstate: 0, privateBusiness: 0, pension: 0, personalDebt: 0,
+  });
+  const emptyDrawByClass = () => ({ cash: 0, stocks: 0, bonds: 0, crypto: 0 });
+
   // Year 0
   trajectory.push({
     age: currentAge0,
@@ -119,9 +130,11 @@ export function simulateFire(state, opts) {
     byClass: computeNetWorthByClass(assets),
     passiveIncome: 0,
     pensionIncome: 0,
+    passiveByClass: emptyByClass(),
     expenses: userInfo.monthlyExpenses * 12,
     debtPayments: 0,
     drawnDown: 0,
+    drawnByClass: emptyDrawByClass(),
     drawdownOk: true,
   });
 
@@ -134,11 +147,15 @@ export function simulateFire(state, opts) {
     let totalDebtPayments = 0;
     let totalExtraExpense = 0;
     let pensionIncome = 0;
+    const passiveByClass = emptyByClass();
     const newAssets = [];
     for (const a of assets) {
       const r = stepAsset(a, ctx);
       newAssets.push(r.asset);
       totalPassiveIncome += r.passiveIncome;
+      if (passiveByClass[a.class] !== undefined) {
+        passiveByClass[a.class] += r.passiveIncome;
+      }
       if (a.class === 'pension') {
         pensionIncome += r.passiveIncome;
       }
@@ -160,6 +177,7 @@ export function simulateFire(state, opts) {
 
     let drawnDown = 0;
     let drawdownOk = true;
+    let drawnByClass = emptyDrawByClass();
     if (inDecumulation) {
       const shortfall = yearlyExpenses + totalDebtPayments - totalPassiveIncome;
       if (shortfall > 0) {
@@ -167,6 +185,7 @@ export function simulateFire(state, opts) {
         assets = dr.updatedAssets;
         drawnDown = dr.drawn;
         drawdownOk = dr.success;
+        if (dr.drawnByClass) drawnByClass = dr.drawnByClass;
       }
     }
 
@@ -177,9 +196,11 @@ export function simulateFire(state, opts) {
       byClass: computeNetWorthByClass(assets),
       passiveIncome: totalPassiveIncome,
       pensionIncome,
+      passiveByClass,
       expenses: yearlyExpenses,
       debtPayments: totalDebtPayments,
       drawnDown,
+      drawnByClass,
       drawdownOk,
     });
 
