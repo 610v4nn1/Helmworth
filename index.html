@@ -1,18 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Webapp</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main>
-      <h1>Hello, Webapp</h1>
-      <p>Edit <code>app.js</code>, <code>index.html</code>, or <code>styles.css</code> to get started.</p>
-      <button id="clickMe">Click me</button>
-      <p id="output"></p>
-    </main>
-    <script src="app.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helmworth — Steer your net worth to financial independence</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js (used by U2) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <a class="brand-link" href="#" aria-label="Helmworth home">
+        <svg class="brand-mark" width="56" height="56" viewBox="-4 -10 52 54" role="img" aria-hidden="true" focusable="false" overflow="visible">
+          <defs>
+            <linearGradient id="brand-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"   stop-color="#0a66c2"/>
+              <stop offset="55%"  stop-color="#378fe9"/>
+              <stop offset="100%" stop-color="#71b7fb"/>
+            </linearGradient>
+            <linearGradient id="brand-trail" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.0"/>
+              <stop offset="55%"  stop-color="#ffffff" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="#ffe9a8" stop-opacity="1"/>
+            </linearGradient>
+            <filter id="brand-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.6" result="b"/>
+              <feMerge>
+                <feMergeNode in="b"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- The box -->
+          <rect x="1" y="1" width="38" height="38" rx="10" ry="10" fill="url(#brand-grad)"/>
+
+          <!-- Ship's-wheel "helm" mark, centered around (20,20) — evokes steering/control -->
+          <g stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9">
+            <!-- Outer wheel ring -->
+            <circle cx="20" cy="20" r="8.5" stroke-width="1.6"/>
+            <!-- Inner hub -->
+            <circle cx="20" cy="20" r="2.2" stroke-width="1.4" fill="#ffffff"/>
+            <!-- Spokes (4), with a subtle handle nub at each tip -->
+            <line x1="20" y1="11.5" x2="20" y2="8.5"  stroke-width="1.6"/>
+            <line x1="20" y1="28.5" x2="20" y2="31.5" stroke-width="1.6"/>
+            <line x1="11.5" y1="20" x2="8.5"  y2="20" stroke-width="1.6"/>
+            <line x1="28.5" y1="20" x2="31.5" y2="20" stroke-width="1.6"/>
+          </g>
+          <g fill="#ffffff" opacity="0.9">
+            <circle cx="20" cy="8.2"  r="1.1"/>
+            <circle cx="20" cy="31.8" r="1.1"/>
+            <circle cx="8.2"  cy="20" r="1.1"/>
+            <circle cx="31.8" cy="20" r="1.1"/>
+          </g>
+
+          <!-- Soft glow trail (same path, blurred) -->
+          <path d="M6 32 C 14 32, 20 30, 25 24 S 34 8, 44 -6"
+                fill="none" stroke="#ffffff" stroke-opacity="0.30"
+                stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+                filter="url(#brand-glow)"/>
+
+          <!-- Superlinear growth curve: starts flat at bottom-left, accelerates,
+               and breaks out beyond the top-right of the box -->
+          <path d="M6 32 C 14 32, 20 30, 25 24 S 34 8, 44 -6"
+                fill="none" stroke="url(#brand-trail)" stroke-width="2.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- Spark at the tip, floating outside the box -->
+          <circle cx="44" cy="-6" r="2.8" fill="#ffe9a8"/>
+          <circle cx="44" cy="-6" r="1.2" fill="#ffffff"/>
+        </svg>
+        <span class="brand-wordmark">
+          <span class="brand-name">Helm<span class="accent">worth</span></span>
+          <span class="tagline">Steer your net worth to financial independence.</span>
+        </span>
+      </a>
+    </div>
+    <div id="io-toolbar" class="io-toolbar"></div>
+  </header>
+
+  <!-- DISCLAIMER BANNER -->
+  <div class="disclaimer-banner" role="alert" aria-live="polite">
+    <div class="disclaimer-inner">
+      <span class="disclaimer-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M8 10c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5c0 2-2 2.5-3 3.5-.5.5-1 1-1 2"></path>
+          <line x1="12" y1="17" x2="12" y2="17.01"></line>
+        </svg>
+      </span>
+      <div class="disclaimer-text">
+        <strong>Heads up:</strong> Don&rsquo;t make financial decisions based on this tool.
+        It&rsquo;s for planning &amp; exploration only and may contain mistakes. Tax rates and
+        projections are approximations &mdash; consult a qualified professional before acting.
+      </div>
+    </div>
+  </div>
+
+  <main class="app-main">
+
+    <!-- USER INFO -->
+    <section id="user-info" class="card-section">
+      <h2 class="section-title">Your profile</h2>
+      <div id="user-info-form" class="user-info-form"></div>
+    </section>
+
+    <!-- LIVE NET WORTH -->
+    <section id="net-worth" class="net-worth-section">
+      <div class="nw-label">Current net worth</div>
+      <div id="nw-value" class="nw-value">0</div>
+    </section>
+
+    <!-- ASSETS -->
+    <section id="assets" class="card-section">
+      <h2 class="section-title">Assets</h2>
+      <div id="asset-list" class="asset-grid"></div>
+      <button id="add-asset-btn" class="add-asset-btn" type="button" aria-label="Add asset">
+        <span class="plus">+</span>
+      </button>
+    </section>
+
+    <!-- CHART (U2 — empty placeholder for now) -->
+    <section id="chart" class="card-section">
+      <h2 class="section-title">Projections</h2>
+      <div class="chart-wrap">
+        <canvas id="projections-chart" aria-label="Net worth projections chart"></canvas>
+      </div>
+      <div id="projections-range" class="year-range-control" aria-label="Year range zoom"></div>
+      <div id="chart-annotations" class="chart-annotations"></div>
+    </section>
+
+    <!-- STATS (U3 — empty placeholder for now) -->
+    <section id="stats" class="card-section">
+      <h2 class="section-title">Stats over time</h2>
+      <div id="stats-table" class="stats-table"></div>
+      <div class="chart-wrap assets-chart-wrap">
+        <canvas id="assets-chart" aria-label="Per-asset-class value over time"></canvas>
+      </div>
+      <div id="assets-range" class="year-range-control" aria-label="Year range zoom"></div>
+      <div id="assets-chart-legend" class="chart-annotations"></div>
+    </section>
+
+  </main>
+
+  <!-- MODAL CONTAINER (asset picker + asset forms) -->
+  <div id="modal-root" class="modal-root" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
 </html>

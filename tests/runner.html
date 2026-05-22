@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit Tests Runner — Financial Independence Planner</title>
+  <style>
+    :root {
+      --bg: #0a0612;
+      --bg-elev: #150c25;
+      --border: #2a1a4a;
+      --fg: #f5e9ff;
+      --fg-dim: #a48ec5;
+      --accent-cyan: #d580ff;
+      --accent-red: #ff3a8a;
+      --accent-lime: #c98bff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 { font-family: 'Orbitron', 'Rajdhani', sans-serif; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .summary {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+    .pass { color: var(--accent-lime); }
+    .fail { color: var(--accent-red); }
+    .pending { color: var(--fg-dim); }
+    output {
+      display: block;
+      white-space: pre-wrap;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    #log {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Unit Tests</h1>
+  <div class="summary">
+    <span id="passed" class="pass">Passed: 0</span>
+    <span id="failed" class="fail">Failed: 0</span>
+    <span id="pending" class="pending">Running...</span>
+  </div>
+  <div id="log"></div>
+
+  <script type="module">
+    import { assert, assertClose, assertDeepEqual, assertThrows } from './assert.js';
+    import c1Tests from './unit/c1.model.test.js';
+    import c1FormatTests from './unit/c1.format.test.js';
+    import c2Tests from './unit/c2.engine.test.js';
+    import c3Tests from './unit/c3.state.test.js';
+    import c4CoastTests from './unit/c4.coastfire.test.js';
+    import c4FireTests from './unit/c4.fire.test.js';
+    import c4SaleTests from './unit/c4.sale.test.js';
+    import c4StatsTests from './unit/c4.stats.test.js';
+    import c5ForbiddenTests from './arch/forbidden-imports.test.js';
+    import c5NoUiTests from './arch/no-ui-imports.test.js';
+    import c5ApiTests from './arch/engine-public-api.test.js';
+    import c5PurityTests from './arch/purity.test.js';
+    import c6CoverageTests from './docs/jsdoc-coverage.test.js';
+    import c6FormulaTests from './docs/jsdoc-formula.test.js';
+    import c6PureTests from './docs/jsdoc-pure.test.js';
+    import c6EngineMdTests from './docs/engine-md.test.js';
+    import c6ApiSyncTests from './docs/api-doc-sync.test.js';
+    import c6CrossRefTests from './docs/cross-refs.test.js';
+    import u2ChartTests from './unit/u2.chart.test.js';
+    import u3ImexTests from './unit/u3.imex.test.js';
+    import u4SaleConvTests from './unit/u4.saleConversion.test.js';
+
+    let passed = 0;
+    let failed = 0;
+    const logEl = document.getElementById('log');
+    const passedEl = document.getElementById('passed');
+    const failedEl = document.getElementById('failed');
+    const pendingEl = document.getElementById('pending');
+
+    function log(msg, isError = false) {
+      const line = document.createElement('div');
+      line.style.color = isError ? 'var(--accent-red)' : 'var(--fg)';
+      line.textContent = msg;
+      logEl.appendChild(line);
+    }
+
+    function updateSummary() {
+      passedEl.textContent = `Passed: ${passed}`;
+      failedEl.textContent = `Failed: ${failed}`;
+    }
+
+    const pendingAsyncTests = [];
+
+    const testContext = {
+      // Synchronous test — called immediately, result recorded synchronously.
+      test(name, fn) {
+        try {
+          const ret = fn();
+          if (ret && typeof ret.then === 'function') {
+            // Async function — defer pass/fail until the promise settles.
+            pendingAsyncTests.push(
+              ret.then(
+                () => { passed++; log(`✅ ${name}`); updateSummary(); },
+                (err) => { failed++; log(`❌ ${name}\n   ${err.message}`, true); updateSummary(); }
+              )
+            );
+          } else {
+            passed++;
+            log(`✅ ${name}`);
+            updateSummary();
+          }
+        } catch (err) {
+          failed++;
+          log(`❌ ${name}\n   ${err.message}`, true);
+          updateSummary();
+        }
+      },
+      assert,
+      assertClose,
+      assertDeepEqual,
+      assertThrows,
+    };
+
+    /** Wait until all async tests queued so far have settled. */
+    async function drainAsync() {
+      while (pendingAsyncTests.length) {
+        const batch = pendingAsyncTests.splice(0);
+        await Promise.all(batch);
+      }
+    }
+
+    async function runAll() {
+      log('Running C1: Data model tests...');
+      try {
+        await c1Tests(testContext);
+      } catch (err) {
+        log(`C1 test suite error: ${err.message}`, true);
+      }
+
+      log('\nRunning C1: Format helper tests...');
+      try {
+        await c1FormatTests(testContext);
+      } catch (err) {
+        log(`C1 format test suite error: ${err.message}`, true);
+      }
+
+      log('\nRunning C2: Simulation engine tests...');
+      try {
+        await c2Tests(testContext);
+      } catch (err) {
+        log(`C2 test suite error: ${err.message}`, true);
+      }
+
+      log('\nRunning C3: State management tests...');
+      try {
+        await c3Tests(testContext);
+      } catch (err) {
+        log(`C3 test suite error: ${err.message}`, true);
+      }
+
+      log('\nRunning C4: Coast FIRE tests...');
+      try { await c4CoastTests(testContext); }
+      catch (err) { log(`C4 Coast suite error: ${err.message}`, true); }
+
+      log('\nRunning C4: Drawdown / FIRE tests...');
+      try { await c4FireTests(testContext); }
+      catch (err) { log(`C4 FIRE suite error: ${err.message}`, true); }
+
+      log('\nRunning C4: Sale events tests...');
+      try { await c4SaleTests(testContext); }
+      catch (err) { log(`C4 Sale suite error: ${err.message}`, true); }
+
+      log('\nRunning C4: Stats table tests...');
+      try { await c4StatsTests(testContext); }
+      catch (err) { log(`C4 Stats suite error: ${err.message}`, true); }
+
+      log('\nRunning C5: Forbidden-imports arch tests...');
+      try { await c5ForbiddenTests(testContext); }
+      catch (err) { log(`C5 Forbidden suite error: ${err.message}`, true); }
+
+      log('\nRunning C5: No-UI-imports arch test...');
+      try { await c5NoUiTests(testContext); }
+      catch (err) { log(`C5 No-UI suite error: ${err.message}`, true); }
+
+      log('\nRunning C5: Engine public API arch tests...');
+      try { await c5ApiTests(testContext); }
+      catch (err) { log(`C5 API suite error: ${err.message}`, true); }
+
+      log('\nRunning C5: Purity arch tests...');
+      try { await c5PurityTests(testContext); }
+      catch (err) { log(`C5 Purity suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: JSDoc coverage tests...');
+      try { await c6CoverageTests(testContext); }
+      catch (err) { log(`C6 Coverage suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: @formula tag tests...');
+      try { await c6FormulaTests(testContext); }
+      catch (err) { log(`C6 Formula suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: @pure tag tests...');
+      try { await c6PureTests(testContext); }
+      catch (err) { log(`C6 Pure suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: engine.md headings tests...');
+      try { await c6EngineMdTests(testContext); }
+      catch (err) { log(`C6 engine.md suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: API doc-sync tests...');
+      try { await c6ApiSyncTests(testContext); }
+      catch (err) { log(`C6 API-sync suite error: ${err.message}`, true); }
+
+      log('\nRunning C6: cross-references tests...');
+      try { await c6CrossRefTests(testContext); }
+      catch (err) { log(`C6 Cross-refs suite error: ${err.message}`, true); }
+
+      log('\nRunning U2: Chart data tests...');
+      try { await u2ChartTests(testContext); }
+      catch (err) { log(`U2 Chart suite error: ${err.message}`, true); }
+
+      log('\nRunning U3: Import/Export & Stats tests...');
+      try { await u3ImexTests(testContext); }
+      catch (err) { log(`U3 suite error: ${err.message}`, true); }
+
+      log('\nRunning U4: Sale conversion tests...');
+      try { await u4SaleConvTests(testContext); }
+      catch (err) { log(`U4 suite error: ${err.message}`, true); }
+
+      // Wait for any deferred async tests (e.g. debounce timing) to settle.
+      await drainAsync();
+
+      pendingEl.textContent = 'Done';
+      pendingEl.style.color = passed === passed + failed ? 'var(--accent-lime)' : 'var(--accent-red)';
+
+      const total = passed + failed;
+      console.log(`\n${total} tests: ${passed} passed, ${failed} failed`);
+    }
+
+    runAll().catch(console.error);
+  </script>
+</body>
+</html>
