@@ -150,19 +150,44 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
   }
   applyConditionalVisibility();
 
-  const actions = h('div', { className: 'form-actions', children: [
+  const actions = h('div', { className: 'form-actions card-actions', children: [
     h('button', {
       className: 'delete-btn',
       attrs: { type: 'button' },
       on: { click: async (e) => {
         e.stopPropagation();
+        // Capture identity *before* collapsing the card — the asset object
+        // reference will still be valid (state isn't mutated until confirm),
+        // but we read these values now for clarity.
+        const id = asset.id;
+        const label = asset.name || def.label;
+        // Close the expanded card first so the user sees only the
+        // confirmation dialog (no overlapping card + backdrop + modal).
+        onToggleExpand(null);
         const ok = await confirmDialog(
-          `Delete "${asset.name || def.label}"? This action cannot be undone.`,
+          `Delete "${label}"? This action cannot be undone.`,
           { title: 'Delete asset', confirmLabel: 'Delete', danger: true }
         );
-        if (ok) store.removeAsset(asset.id);
+        if (ok) store.removeAsset(id);
       }},
       children: 'Delete',
+    }),
+    h('button', {
+      className: 'update-btn',
+      attrs: { type: 'button' },
+      // Saving is automatic on every field `change` event, so this button
+      // simply closes the expanded card. We blur the active field first to
+      // force a `change` event for any currently-focused input that has
+      // pending edits (some browsers only fire `change` on blur/Enter).
+      on: { click: (e) => {
+        e.stopPropagation();
+        const active = document.activeElement;
+        if (active && overlay.contains(active) && typeof active.blur === 'function') {
+          active.blur();
+        }
+        onToggleExpand(null);
+      }},
+      children: 'Update',
     }),
   ]});
 
