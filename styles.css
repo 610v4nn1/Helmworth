@@ -351,39 +351,38 @@ input, select { font-family: inherit; color: inherit; }
 }
 
 /* =========================================================================
-   NET WORTH HERO — premium "profile card" with gradient banner
+   NET WORTH HERO — full-blue card, white number centred both ways
    ========================================================================= */
 
 .net-worth-section {
   text-align: center;
-  padding: 0 0 var(--gap-xl);
-  background: var(--bg-elev);
+  padding: var(--gap-xl) var(--gap-lg);
+  /* Whole card is the brand gradient (matching the banner the upper half
+     used to use), with the same subtle radial highlights for depth. */
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.18), transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(0, 47, 108, 0.30), transparent 55%),
+    var(--grad-brand-dark);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
+  /* Centre the label + number vertically in a tall hero band. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
 }
 
-/* Gradient banner with subtle pattern overlay */
-.net-worth-section::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 120px;
-  background:
-    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.25), transparent 40%),
-    radial-gradient(circle at 20% 80%, rgba(0, 47, 108, 0.30), transparent 50%),
-    var(--grad-brand-dark);
-}
-
-/* Decorative shine */
+/* Decorative shine — kept, now spanning the full card height. */
 .net-worth-section::after {
   content: '';
   position: absolute;
   top: 0; left: -50%;
-  width: 100%; height: 120px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
   transform: skewX(-20deg);
   pointer-events: none;
 }
@@ -394,37 +393,36 @@ input, select { font-family: inherit; color: inherit; }
   font-family: var(--font-body);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--fg-dim);
+  /* Light translucent chip on dark blue. */
+  color: rgba(255, 255, 255, 0.85);
   font-size: 0.78rem;
   font-weight: 700;
-  margin-top: 140px;
   display: inline-block;
   padding: 0.3rem 0.9rem;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .nw-value {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
-  background: linear-gradient(180deg, var(--fg-strong) 0%, #2a2a2a 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: none;
+  /* Bigger than before — was clamp(2.5rem, 7vw, 4.5rem). */
+  font-size: clamp(3rem, 9vw, 6rem);
+  color: #ffffff;
+  /* Subtle shadow for legibility on the gradient. */
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
   margin-top: var(--gap-md);
   line-height: 1.05;
   letter-spacing: -0.03em;
 }
 
 .nw-value.negative {
-  background: linear-gradient(180deg, #cc1016 0%, #8a0a0e 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: none;
+  /* Soft red that stays legible on dark blue. */
+  color: #ffb3b8;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.30);
 }
 
 /* =========================================================================
@@ -1285,9 +1283,9 @@ input, select { font-family: inherit; color: inherit; }
   .app-main { padding: var(--gap-md) var(--gap-sm); }
   .card-section { padding: var(--gap-lg) var(--gap-md); }
   .picker-grid { grid-template-columns: repeat(2, 1fr); }
-  .nw-value { font-size: clamp(2rem, 11vw, 3rem); }
-  .net-worth-section::before { height: 96px; }
-  .nw-label { margin-top: 110px; }
+  /* Hero card: shrink the number and reduce min-height on small screens. */
+  .nw-value { font-size: clamp(2.5rem, 13vw, 4rem); }
+  .net-worth-section { min-height: 200px; padding: var(--gap-lg) var(--gap-md); }
   .app-header { padding: var(--gap-sm) var(--gap-md); }
   .app-header h1 { font-size: 1.5rem; }
   /* On mobile the brand + toolbar can't fit on one row, so let the header
