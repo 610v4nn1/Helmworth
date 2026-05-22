@@ -172,29 +172,6 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       }},
       children: 'Delete',
     }),
-    h('button', {
-      className: 'update-btn',
-      attrs: { type: 'button' },
-      // The expanded card auto-saves on every field `change` event, so
-      // the Update button's job is purely to close the card. We keep
-      // this handler as small as possible: anything more elaborate (e.g.
-      // synchronously flushing a focused input's pending value) ends up
-      // mutating the store mid-click, which triggers a synchronous
-      // `assetList.render()` that destroys the overlay (and this very
-      // button) before our handler finishes — leading to subtle close-
-      // and-reopen glitches.
-      //
-      // Pending edits are still saved: clicking the Update button blurs
-      // the active input in browsers that focus buttons on click
-      // (Linux/Windows), and is a no-op on browsers that don't (macOS).
-      // In both cases the user can commit a pending edit by pressing
-      // Tab/Enter or clicking another field before clicking Update.
-      on: { click: (e) => {
-        e.stopPropagation();
-        onToggleExpand(null);
-      }},
-      children: 'Update',
-    }),
   ]});
 
   overlay.appendChild(fieldsEl);
