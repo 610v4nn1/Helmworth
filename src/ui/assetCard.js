@@ -15,8 +15,46 @@ import { h, refreshIcons, createIcon } from './dom.js';
 import { formatCurrency } from './format.js';
 import { renderField, readField } from './fieldEditor.js';
 import { getClassDef, FIELDS } from './classDefs.js';
-import { assetNetValue } from '../model/assets.js';
+import { assetNetValue, createLot } from '../model/assets.js';
 import { confirmDialog } from './modal.js';
+
+/** Asset classes whose net value lives in `lots[]`, not in a top-level
+ * `value` field. The form still exposes a single "Current value" input
+ * for ergonomics, so we have to translate edits to that input back into
+ * a lots update — and read the displayed value from the lot sum, not
+ * from `asset.value` (which doesn't exist on these classes). */
+const LOT_BEARING_CLASSES = new Set(['stocks', 'bonds', 'crypto']);
+
+/**
+ * Translates a single-field edit into a state patch suitable for
+ * `store.updateAsset(id, patch)`. For most fields this is just
+ * `{ [key]: value }`, but for the synthetic "value" field on lot-bearing
+ * classes we have to rebuild `lots` so the change actually takes effect
+ * (assetNetValue for stocks/bonds/crypto is sum(lot.value), it ignores
+ * any top-level `value` property).
+ *
+ * Strategy when editing `value` on a lot-bearing class:
+ *   - If the asset already has lots with a positive total, scale every
+ *     lot's `value` proportionally to the new total. `costBasis` is left
+ *     untouched, so unrealized gains (and therefore the HIFO drawdown
+ *     tax math) stay consistent with what the user originally entered.
+ *   - Otherwise (no lots, or all-zero lots), collapse to a single lot
+ *     at the new value, with `costBasis = newValue` — same shape the
+ *     create-asset factory uses.
+ */
+function buildFieldPatch(asset, key, value) {
+  if (key === 'value' && LOT_BEARING_CLASSES.has(asset.class)) {
+    const newTotal = Number(value) || 0;
+    const oldTotal = (asset.lots ?? []).reduce((s, l) => s + (l.value || 0), 0);
+    if (oldTotal > 0 && newTotal > 0) {
+      const scale = newTotal / oldTotal;
+      const lots = asset.lots.map((l) => ({ ...l, value: l.value * scale }));
+      return { lots };
+    }
+    return { lots: [createLot({ value: newTotal, costBasis: newTotal, year: 0 })] };
+  }
+  return { [key]: value };
+}
 
 /**
  * Builds a single asset card (collapsed by default, expanded if `expanded`).
@@ -132,7 +170,14 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
   }
 
   for (const f of fields) {
-    const initial = asset[f.key];
+    // For lot-bearing classes (stocks/bonds/crypto), the synthetic "value"
+    // form field doesn't correspond to a top-level property — the actual
+    // value lives in `lots[]`. Show the current lot total instead so the
+    // input is pre-filled with the value the user sees on the card.
+    const initial =
+      f.key === 'value' && LOT_BEARING_CLASSES.has(asset.class)
+        ? assetNetValue(asset)
+        : asset[f.key];
     const { field: fieldEl, input } = renderField(f, initial, { store, currentAssetId: asset.id });
     fieldEls[f.key] = fieldEl;
     fieldInputs[f.key] = input;
@@ -149,9 +194,8 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       // swallowed and they'd have to click a second time. Deferring the
       // store update lets the click handler complete first.
       const id = asset.id;
-      const key = f.key;
-      const value = r.value;
-      Promise.resolve().then(() => store.updateAsset(id, { [key]: value }));
+      const patch = buildFieldPatch(asset, f.key, r.value);
+      Promise.resolve().then(() => store.updateAsset(id, patch));
     });
     // Refresh visibility when controller fields change. (The store update
     // above will trigger a full re-render too, but doing it locally avoids
@@ -178,7 +222,10 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       if (!input) continue;
       const r = readField(f, input);
       if (r.error) continue; // skip invalid fields, keep prior value
-      patch[f.key] = r.value;
+      // For lot-bearing classes, editing `value` rewrites `lots` (see
+      // buildFieldPatch). Merge the resulting fragment into the batch
+      // patch so a single store.updateAsset call applies everything.
+      Object.assign(patch, buildFieldPatch(asset, f.key, r.value));
     }
     // Apply synchronously — the overlay is about to be torn down
     // anyway, so the deferral dance the `change` handler does is
