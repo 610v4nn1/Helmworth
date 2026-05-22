@@ -1957,14 +1957,14 @@ input, select { font-family: inherit; color: inherit; }
   letter-spacing: 0.01em;
 }
 
-.cls-stocks          { background: var(--class-stocks); }
-.cls-bonds           { background: var(--class-bonds); }
-.cls-crypto          { background: var(--class-crypto); }
-.cls-cash            { background: var(--class-cash); }
-.cls-realEstate      { background: var(--class-realEstate); }
-.cls-privateBusiness { background: var(--class-privateBusiness); }
-.cls-pension         { background: var(--class-pension); }
-.cls-personalDebt    { background: var(--class-personalDebt); }
+.cls-stocks.cls          { background: var(--class-stocks); }
+.cls-bonds.cls           { background: var(--class-bonds); }
+.cls-crypto.cls          { background: var(--class-crypto); }
+.cls-cash.cls            { background: var(--class-cash); }
+.cls-realEstate.cls      { background: var(--class-realEstate); }
+.cls-privateBusiness.cls { background: var(--class-privateBusiness); }
+.cls-pension.cls         { background: var(--class-pension); }
+.cls-personalDebt.cls    { background: var(--class-personalDebt); }
 
 /* --- MathJax tweaks --- */
 mjx-container[jax="SVG"][display="true"] {
