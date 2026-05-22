@@ -130,7 +130,8 @@ step function is called **once per year** by `simulateStandard`.
 
 Implemented by [`stepStocks`](../src/engine/steps/stocks.js).
 
-Variables: `r = avgReturnRate`, `c = yearlyContribution` (decimal, currency).
+Variables: `r = avgReturnRate`, `c = yearlyContribution` (decimal, currency),
+`g = contributionGrowthRate` (decimal; defaults to 0).
 
 ```
 For each existing lot l:
@@ -138,11 +139,18 @@ For each existing lot l:
   l.costBasis' = l.costBasis      // unchanged
   l.year'      = l.year
 
-If applyContribution and c > 0:
-  newLot = { value: c, costBasis: c, year: y }
+c_y = c · (1 + g)^y                 // contribution at simulation year y
+
+If applyContribution and c_y > 0:
+  newLot = { value: c_y, costBasis: c_y, year: y }
 
 passiveIncome = 0   // dividends not modelled separately in v1
 ```
+
+`costBasis` is captured per lot, distinct from `value` — the user provides it
+when creating or editing the asset (positions with unrealised gains have
+`costBasis < value`), and it stays untouched by yearly growth so the HIFO
+drawdown tax math reflects the actual gain.
 
 **Worked example** (TC2.6): 10 years at 7 % from 10 000, no contribution →
 `10 000 · 1.07¹⁰ ≈ 19 671.51`.
@@ -151,7 +159,8 @@ passiveIncome = 0   // dividends not modelled separately in v1
 
 Implemented by [`stepBonds`](../src/engine/steps/bonds.js).
 
-Variables: `y = yieldRate`, `t = yieldTaxRate`, `c = yearlyContribution`.
+Variables: `y = yieldRate`, `t = yieldTaxRate`, `c = yearlyContribution`,
+`g = contributionGrowthRate` (defaults to 0).
 
 ```
 totalValue     = Σ lot.value          // before adding new contribution
@@ -159,16 +168,23 @@ passiveIncome  = totalValue · y · (1 − t)
 
 For each lot: lot' = lot               // principal flat in v1
 
-If applyContribution and c > 0:
-  newLot = { value: c, costBasis: c, year: y }
+c_y = c · (1 + g)^year                  // contribution at year y
+
+If applyContribution and c_y > 0:
+  newLot = { value: c_y, costBasis: c_y, year: year }
 ```
+
+`costBasis` is per lot, captured at creation / edit time, and is independent
+of `value`. The new contribution lot does **not** earn yield in the year it
+is added.
 
 **Worked example** (TC2.8): 100 000 at 4 % yield, 20 % tax →
 `100 000 · 0.04 · 0.80 = 3 200`.
 
 ### Crypto
 
-Mathematically identical to [Stocks](#stocks); see
+Mathematically identical to [Stocks](#stocks) (including the
+`contributionGrowthRate` term `c · (1 + g)^y`); see
 [`stepCrypto`](../src/engine/steps/crypto.js).
 
 ### Cash

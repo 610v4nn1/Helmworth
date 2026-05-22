@@ -16,11 +16,14 @@
  *
  * @formula
  *   For each lot: lot.value' = lot.value · (1 + avgReturnRate)
- *   If applyContribution and yearlyContribution > 0:
- *     newLot = { value: yearlyContribution, costBasis: yearlyContribution, year: ctx.year }
+ *   c_y = yearlyContribution · (1 + contributionGrowthRate)^year
+ *   If applyContribution and c_y > 0:
+ *     newLot = { value: c_y, costBasis: c_y, year: ctx.year }
  *   passiveIncome = 0
  *
  * @assumptions Crypto pays no income in v1 (no staking rewards modelled).
+ *   `contributionGrowthRate` defaults to 0, matching the previous flat-
+ *   contribution behaviour.
  *
  * Cross-reference: see "Crypto" in [engine.md](../../../docs/engine.md#crypto).
  */
@@ -32,10 +35,12 @@ export function stepCrypto(asset, ctx) {
     year: lot.year,
   }));
 
-  if (applyContribution && asset.yearlyContribution > 0) {
+  const g = asset.contributionGrowthRate ?? 0;
+  const cy = asset.yearlyContribution * Math.pow(1 + g, ctx.year);
+  if (applyContribution && cy > 0) {
     grownLots.push({
-      value: asset.yearlyContribution,
-      costBasis: asset.yearlyContribution,
+      value: cy,
+      costBasis: cy,
       year: ctx.year,
     });
   }

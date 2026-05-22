@@ -33,9 +33,13 @@ export function createLot({ value, costBasis, year = 0 }) {
   if (typeof value !== 'number' || value < 0 || !Number.isFinite(value)) {
     throw new Error('Lot value must be a non-negative number');
   }
+  const cb = costBasis ?? value;
+  if (typeof cb !== 'number' || cb < 0 || !Number.isFinite(cb)) {
+    throw new Error('Lot cost basis must be a non-negative number');
+  }
   return {
     value,
-    costBasis: costBasis ?? value, // Default: cost basis = value
+    costBasis: cb,
     year,
   };
 }
@@ -56,6 +60,9 @@ export function createLot({ value, costBasis, year = 0 }) {
  * @property {Lot[]} lots - Array of purchase lots
  * @property {number} avgReturnRate - Expected yearly return *as a decimal* (e.g. 0.07 = 7%)
  * @property {number} yearlyContribution - Amount added each year (Standard scenario)
+ * @property {number} contributionGrowthRate - Yearly growth applied to the contribution
+ *   (decimal, e.g. 0.03 = 3%/y). At simulation year `y`, the contribution actually
+ *   added is `yearlyContribution · (1 + contributionGrowthRate)^y`.
  * @property {number} capitalGainsTaxRate - Tax on capital gains *as a decimal* (e.g. 0.26 = 26%)
  */
 
@@ -64,20 +71,25 @@ export function createLot({ value, costBasis, year = 0 }) {
  * Stocks are liquid, positive, and have lots for HIFO tax optimization.
  * @param {Object} params - Stock parameters
  * @param {string} [params.name='Stocks'] - Asset label
- * @param {number} params.value - Initial value (creates first lot)
+ * @param {number} params.value - Initial market value (creates first lot)
+ * @param {number} [params.costBasis=value] - Initial cost basis (defaults to value;
+ *   set lower than value if the position already has unrealized gains).
  * @param {number} [params.avgReturnRate=0.07] - Yearly expected return (default: 7%)
  * @param {number} [params.yearlyContribution=0] - Yearly contribution amount
+ * @param {number} [params.contributionGrowthRate=0] - Yearly growth of the contribution
  * @param {number} [params.capitalGainsTaxRate=0.26] - Capital gains tax rate
  * @returns {StocksAsset} A stocks asset object
- * @throws {Error} If value is missing or negative
+ * @throws {Error} If value is missing or negative, or costBasis is negative
  * @example
- * createStocks({ name: 'VTI', value: 10000, avgReturnRate: 0.08 });
+ * createStocks({ name: 'VTI', value: 10000, costBasis: 8000, avgReturnRate: 0.08 });
  */
 export function createStocks({
   name = 'Stocks',
   value,
+  costBasis,
   avgReturnRate = 0.07,
   yearlyContribution = 0,
+  contributionGrowthRate = 0,
   capitalGainsTaxRate = 0.26,
 } = {}) {
   if (typeof value !== 'number' || value < 0 || !Number.isFinite(value)) {
@@ -88,9 +100,10 @@ export function createStocks({
     id: newId(),
     name,
     class: 'stocks',
-    lots: [createLot({ value, costBasis: value, year: 0 })],
+    lots: [createLot({ value, costBasis: costBasis ?? value, year: 0 })],
     avgReturnRate,
     yearlyContribution,
+    contributionGrowthRate,
     capitalGainsTaxRate,
   };
 }
@@ -103,6 +116,8 @@ export function createStocks({
  * @property {Lot[]} lots - Array of purchase lots
  * @property {number} yieldRate - Yearly cash payout as % of value (e.g. 0.04 = 4%)
  * @property {number} yearlyContribution - Amount added each year (Standard scenario)
+ * @property {number} contributionGrowthRate - Yearly growth applied to the contribution
+ *   (decimal). See StocksAsset for details.
  * @property {number} capitalGainsTaxRate - Tax on capital gains when sold
  * @property {number} yieldTaxRate - Tax on yield payouts (typically lower)
  */
@@ -112,9 +127,11 @@ export function createStocks({
  * Bonds are liquid, positive, pay yield (passive income), value stays flat in v1.
  * @param {Object} params - Bond parameters
  * @param {string} [params.name='Bonds'] - Asset label
- * @param {number} params.value - Initial value (creates first lot)
+ * @param {number} params.value - Initial market value (creates first lot)
+ * @param {number} [params.costBasis=value] - Initial cost basis (defaults to value)
  * @param {number} [params.yieldRate=0.04] - Yearly yield rate (default: 4%)
  * @param {number} [params.yearlyContribution=0] - Yearly contribution amount
+ * @param {number} [params.contributionGrowthRate=0] - Yearly growth of the contribution
  * @param {number} [params.capitalGainsTaxRate=0.26] - Capital gains tax rate
  * @param {number} [params.yieldTaxRate=0.26] - Tax on yield payouts
  * @returns {BondsAsset} A bonds asset object
@@ -125,8 +142,10 @@ export function createStocks({
 export function createBonds({
   name = 'Bonds',
   value,
+  costBasis,
   yieldRate = 0.04,
   yearlyContribution = 0,
+  contributionGrowthRate = 0,
   capitalGainsTaxRate = 0.26,
   yieldTaxRate = 0.26,
 } = {}) {
@@ -138,9 +157,10 @@ export function createBonds({
     id: newId(),
     name,
     class: 'bonds',
-    lots: [createLot({ value, costBasis: value, year: 0 })],
+    lots: [createLot({ value, costBasis: costBasis ?? value, year: 0 })],
     yieldRate,
     yearlyContribution,
+    contributionGrowthRate,
     capitalGainsTaxRate,
     yieldTaxRate,
   };
@@ -154,6 +174,8 @@ export function createBonds({
  * @property {Lot[]} lots - Array of purchase lots
  * @property {number} avgReturnRate - Expected yearly return (can be volatile)
  * @property {number} yearlyContribution - Amount added each year (Standard scenario)
+ * @property {number} contributionGrowthRate - Yearly growth applied to the contribution
+ *   (decimal). See StocksAsset for details.
  * @property {number} capitalGainsTaxRate - Tax on capital gains
  */
 
@@ -162,9 +184,11 @@ export function createBonds({
  * Crypto is liquid, positive, and has lots for HIFO tax optimization.
  * @param {Object} params - Crypto parameters
  * @param {string} [params.name='Crypto'] - Asset label
- * @param {number} params.value - Initial value (creates first lot)
+ * @param {number} params.value - Initial market value (creates first lot)
+ * @param {number} [params.costBasis=value] - Initial cost basis (defaults to value)
  * @param {number} [params.avgReturnRate=0.10] - Yearly expected return (default: 10%)
  * @param {number} [params.yearlyContribution=0] - Yearly contribution amount
+ * @param {number} [params.contributionGrowthRate=0] - Yearly growth of the contribution
  * @param {number} [params.capitalGainsTaxRate=0.26] - Capital gains tax rate
  * @returns {CryptoAsset} A crypto asset object
  * @throws {Error} If value is missing or negative
@@ -174,8 +198,10 @@ export function createBonds({
 export function createCrypto({
   name = 'Crypto',
   value,
+  costBasis,
   avgReturnRate = 0.10,
   yearlyContribution = 0,
+  contributionGrowthRate = 0,
   capitalGainsTaxRate = 0.26,
 } = {}) {
   if (typeof value !== 'number' || value < 0 || !Number.isFinite(value)) {
@@ -186,9 +212,10 @@ export function createCrypto({
     id: newId(),
     name,
     class: 'crypto',
-    lots: [createLot({ value, costBasis: value, year: 0 })],
+    lots: [createLot({ value, costBasis: costBasis ?? value, year: 0 })],
     avgReturnRate,
     yearlyContribution,
+    contributionGrowthRate,
     capitalGainsTaxRate,
   };
 }

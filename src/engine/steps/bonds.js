@@ -19,17 +19,23 @@
  *     lot.costBasis'  = lot.costBasis
  *     lot.year'       = lot.year
  *
- *   If applyContribution and yearlyContribution > 0:
- *     newLot = { value: yearlyContribution,
- *                costBasis: yearlyContribution,
+ *   c_y = yearlyContribution · (1 + contributionGrowthRate)^year
+ *
+ *   If applyContribution and c_y > 0:
+ *     newLot = { value: c_y,
+ *                costBasis: c_y,
  *                year: ctx.year }
  *
- *   passiveIncome = totalValue · yieldRate · (1 − yieldTaxRate)
+ *   passiveIncome = totalValue · y · (1 − t)
+ *   (totalValue is the pre-contribution sum of lot.value, so the new
+ *    contribution doesn't pay yield in the year it's added.)
  *
  * @assumptions
  *   - Bond principal is treated as flat in v1 (no appreciation modelled).
  *   - Yield is paid out as cash each year (not reinvested into the asset).
  *   - Yield tax is applied per-year at `yieldTaxRate`.
+ *   - `contributionGrowthRate` defaults to 0, reproducing the previous flat
+ *     contribution behaviour.
  *
  * Cross-reference: see "Bonds" in [engine.md](../../../docs/engine.md#bonds).
  *
@@ -52,10 +58,12 @@ export function stepBonds(asset, ctx) {
     year: lot.year,
   }));
 
-  if (applyContribution && asset.yearlyContribution > 0) {
+  const g = asset.contributionGrowthRate ?? 0;
+  const cy = asset.yearlyContribution * Math.pow(1 + g, ctx.year);
+  if (applyContribution && cy > 0) {
     lots.push({
-      value: asset.yearlyContribution,
-      costBasis: asset.yearlyContribution,
+      value: cy,
+      costBasis: cy,
       year: ctx.year,
     });
   }

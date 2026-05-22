@@ -20,9 +20,11 @@
  *     lot.costBasis' = lot.costBasis    // unchanged
  *     lot.year' = lot.year              // unchanged
  *
- *   If applyContribution and yearlyContribution > 0:
- *     newLot = { value: yearlyContribution,
- *                costBasis: yearlyContribution,
+ *   c_y = yearlyContribution · (1 + contributionGrowthRate)^year
+ *
+ *   If applyContribution and c_y > 0:
+ *     newLot = { value: c_y,
+ *                costBasis: c_y,
  *                year: ctx.year }
  *
  *   passiveIncome = 0   // dividends not modelled separately in v1
@@ -30,6 +32,8 @@
  * @assumptions
  *   - Stocks pay no separate dividends in v1; gains realized only on sale.
  *   - The new contribution lot is added at year-end at par (cost basis = value).
+ *   - `contributionGrowthRate` defaults to 0, reproducing the previous flat
+ *     contribution behaviour.
  *
  * Cross-reference: see "Stocks" in [engine.md](../../../docs/engine.md#stocks).
  *
@@ -47,10 +51,12 @@ export function stepStocks(asset, ctx) {
     year: lot.year,
   }));
 
-  if (applyContribution && asset.yearlyContribution > 0) {
+  const g = asset.contributionGrowthRate ?? 0;
+  const cy = asset.yearlyContribution * Math.pow(1 + g, ctx.year);
+  if (applyContribution && cy > 0) {
     grownLots.push({
-      value: asset.yearlyContribution,
-      costBasis: asset.yearlyContribution,
+      value: cy,
+      costBasis: cy,
       year: ctx.year,
     });
   }

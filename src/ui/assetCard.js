@@ -19,39 +19,83 @@ import { assetNetValue, createLot } from '../model/assets.js';
 import { confirmDialog } from './modal.js';
 
 /** Asset classes whose net value lives in `lots[]`, not in a top-level
- * `value` field. The form still exposes a single "Current value" input
- * for ergonomics, so we have to translate edits to that input back into
- * a lots update — and read the displayed value from the lot sum, not
- * from `asset.value` (which doesn't exist on these classes). */
+ * `value` field. The form still exposes "Current value" and "Cost basis"
+ * inputs for ergonomics, so we have to translate edits to those inputs
+ * back into a lots update — and read the displayed values from the lot
+ * sums, not from `asset.value` / `asset.costBasis` (which don't exist on
+ * these classes). */
 const LOT_BEARING_CLASSES = new Set(['stocks', 'bonds', 'crypto']);
+
+/** Sum of `lot.costBasis` across an asset's lots (0 if no lots). */
+function totalCostBasis(asset) {
+  return (asset.lots ?? []).reduce((s, l) => s + (l.costBasis || 0), 0);
+}
+
+/**
+ * Builds a `{ lots: [...] }` patch that applies a new total value AND a new
+ * total cost basis to a lot-bearing asset. Either argument can be `null` /
+ * `undefined`, meaning "the user didn't touch that side, keep the current
+ * total". Edits scale the per-lot value/costBasis proportionally so any
+ * fine-grained lot history (years, lot-by-lot HIFO ordering) is preserved.
+ *
+ * Behaviour:
+ *   - When the relevant *old* total is 0, we can't scale, so we collapse
+ *     to a single fresh lot at the new total (year: 0, the freshly-edited
+ *     position is treated as new today).
+ *   - Other fields on each lot (`year`) are kept untouched.
+ */
+function buildLotsPatch(asset, newValue, newCostBasis) {
+  const oldValue = assetNetValue(asset);
+  const oldCB    = totalCostBasis(asset);
+
+  // If the user didn't touch one side, the new total for that side is
+  // identically the old total (no scaling, leaves lots untouched on that
+  // axis).
+  const targetValue = newValue == null ? oldValue : Number(newValue) || 0;
+  const targetCB    = newCostBasis == null ? oldCB    : Number(newCostBasis) || 0;
+
+  // Empty / all-zero starting point on either axis → we can't proportionally
+  // scale; collapse to a single fresh lot reflecting the new totals.
+  if (oldValue <= 0 || oldCB <= 0 || (asset.lots ?? []).length === 0) {
+    return {
+      lots: [createLot({
+        value: targetValue,
+        costBasis: targetCB,
+        year: 0,
+      })],
+    };
+  }
+
+  const valueScale = targetValue / oldValue;
+  const cbScale    = targetCB / oldCB;
+  const lots = asset.lots.map((l) => ({
+    ...l,
+    value:     l.value     * valueScale,
+    costBasis: l.costBasis * cbScale,
+  }));
+  return { lots };
+}
 
 /**
  * Translates a single-field edit into a state patch suitable for
  * `store.updateAsset(id, patch)`. For most fields this is just
- * `{ [key]: value }`, but for the synthetic "value" field on lot-bearing
- * classes we have to rebuild `lots` so the change actually takes effect
- * (assetNetValue for stocks/bonds/crypto is sum(lot.value), it ignores
- * any top-level `value` property).
+ * `{ [key]: value }`; for the synthetic `value` and `costBasis` inputs on
+ * lot-bearing classes we delegate to `buildLotsPatch` so the change
+ * actually takes effect.
  *
- * Strategy when editing `value` on a lot-bearing class:
- *   - If the asset already has lots with a positive total, scale every
- *     lot's `value` proportionally to the new total. `costBasis` is left
- *     untouched, so unrealized gains (and therefore the HIFO drawdown
- *     tax math) stay consistent with what the user originally entered.
- *   - Otherwise (no lots, or all-zero lots), collapse to a single lot
- *     at the new value, with `costBasis = newValue` — same shape the
- *     create-asset factory uses.
+ * Optionally, `companion` lets the caller pass through the *other* side
+ * (current value when editing cost basis, and vice versa). This keeps the
+ * lot rewrite consistent when both inputs are edited within a single
+ * commit, instead of one overwriting the other.
  */
-function buildFieldPatch(asset, key, value) {
-  if (key === 'value' && LOT_BEARING_CLASSES.has(asset.class)) {
-    const newTotal = Number(value) || 0;
-    const oldTotal = (asset.lots ?? []).reduce((s, l) => s + (l.value || 0), 0);
-    if (oldTotal > 0 && newTotal > 0) {
-      const scale = newTotal / oldTotal;
-      const lots = asset.lots.map((l) => ({ ...l, value: l.value * scale }));
-      return { lots };
+function buildFieldPatch(asset, key, value, companion) {
+  if (LOT_BEARING_CLASSES.has(asset.class)) {
+    if (key === 'value') {
+      return buildLotsPatch(asset, value, companion);
     }
-    return { lots: [createLot({ value: newTotal, costBasis: newTotal, year: 0 })] };
+    if (key === 'costBasis') {
+      return buildLotsPatch(asset, companion, value);
+    }
   }
   return { [key]: value };
 }
@@ -171,13 +215,17 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
 
   for (const f of fields) {
     // For lot-bearing classes (stocks/bonds/crypto), the synthetic "value"
-    // form field doesn't correspond to a top-level property — the actual
-    // value lives in `lots[]`. Show the current lot total instead so the
-    // input is pre-filled with the value the user sees on the card.
-    const initial =
-      f.key === 'value' && LOT_BEARING_CLASSES.has(asset.class)
-        ? assetNetValue(asset)
-        : asset[f.key];
+    // and "costBasis" form fields don't correspond to top-level properties
+    // — both live in `lots[]`. Show the current lot totals instead so the
+    // inputs are pre-filled with the figures the user sees on the card.
+    let initial;
+    if (LOT_BEARING_CLASSES.has(asset.class) && f.key === 'value') {
+      initial = assetNetValue(asset);
+    } else if (LOT_BEARING_CLASSES.has(asset.class) && f.key === 'costBasis') {
+      initial = totalCostBasis(asset);
+    } else {
+      initial = asset[f.key];
+    }
     const { field: fieldEl, input } = renderField(f, initial, { store, currentAssetId: asset.id });
     fieldEls[f.key] = fieldEl;
     fieldInputs[f.key] = input;
@@ -194,7 +242,22 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       // swallowed and they'd have to click a second time. Deferring the
       // store update lets the click handler complete first.
       const id = asset.id;
-      const patch = buildFieldPatch(asset, f.key, r.value);
+      // For lot-bearing classes, edits to `value` or `costBasis` rewrite
+      // `lots[]` (see buildFieldPatch). Pass the *current* reading of the
+      // companion input so the rewrite preserves the side the user didn't
+      // touch this time, instead of accidentally collapsing it via
+      // proportional scaling against a stale value.
+      let companion;
+      if (LOT_BEARING_CLASSES.has(asset.class) && (f.key === 'value' || f.key === 'costBasis')) {
+        const otherKey = f.key === 'value' ? 'costBasis' : 'value';
+        const otherInput = fieldInputs[otherKey];
+        const otherDescriptor = fields.find((fd) => fd.key === otherKey);
+        if (otherInput && otherDescriptor) {
+          const or = readField(otherDescriptor, otherInput);
+          if (!or.error) companion = or.value;
+        }
+      }
+      const patch = buildFieldPatch(asset, f.key, r.value, companion);
       Promise.resolve().then(() => store.updateAsset(id, patch));
     });
     // Refresh visibility when controller fields change. (The store update
@@ -217,14 +280,35 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
     e.stopPropagation();
     // Read every field's current value and build a single patch.
     const patch = {};
+    // Pre-read value / costBasis so the lot-bearing rewrite below can use
+    // both sides at once instead of letting one clobber the other.
+    const lotBearing = LOT_BEARING_CLASSES.has(asset.class);
+    let pendingValue;
+    let pendingCB;
+    if (lotBearing) {
+      const valueDesc = fields.find((fd) => fd.key === 'value');
+      const cbDesc    = fields.find((fd) => fd.key === 'costBasis');
+      if (valueDesc && fieldInputs.value) {
+        const r = readField(valueDesc, fieldInputs.value);
+        if (!r.error) pendingValue = r.value;
+      }
+      if (cbDesc && fieldInputs.costBasis) {
+        const r = readField(cbDesc, fieldInputs.costBasis);
+        if (!r.error) pendingCB = r.value;
+      }
+      // Single combined lots rewrite, applied once.
+      if (pendingValue !== undefined || pendingCB !== undefined) {
+        Object.assign(patch, buildLotsPatch(asset, pendingValue, pendingCB));
+      }
+    }
     for (const f of fields) {
+      // The lot-bearing inputs were already folded into `patch.lots`
+      // above; skip them here so we don't double-process them.
+      if (lotBearing && (f.key === 'value' || f.key === 'costBasis')) continue;
       const input = fieldInputs[f.key];
       if (!input) continue;
       const r = readField(f, input);
       if (r.error) continue; // skip invalid fields, keep prior value
-      // For lot-bearing classes, editing `value` rewrites `lots` (see
-      // buildFieldPatch). Merge the resulting fragment into the batch
-      // patch so a single store.updateAsset call applies everything.
       Object.assign(patch, buildFieldPatch(asset, f.key, r.value));
     }
     // Apply synchronously — the overlay is about to be torn down

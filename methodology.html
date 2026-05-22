@@ -320,17 +320,28 @@
 
       <!-- Stocks -->
       <h3 class="subsection-title">6.1 Stocks</h3>
-      <p>Parameters: average return \(r\), yearly contribution \(c\).</p>
+      <p>Parameters: average return \(r\), yearly contribution \(c\), contribution growth \(g\) (defaults to 0).</p>
       <p>For every existing lot \(\ell\):</p>
       \[
         \ell.\text{value}' = \ell.\text{value} \cdot (1 + r), \qquad
         \ell.\text{costBasis}' = \ell.\text{costBasis}, \qquad
         \ell.\text{year}' = \ell.\text{year}
       \]
-      <p>If \(\mathbb{1}_{\text{contrib}} \wedge c > 0\), append a new lot:</p>
+      <p>The contribution itself grows over time:</p>
       \[
-        \ell_{\mathrm{new}} = (c,\ c,\ y), \qquad \pi = 0
+        c_y \;=\; c \cdot (1 + g)^{y}
       \]
+      <p>If \(\mathbb{1}_{\text{contrib}} \wedge c_y > 0\), append a new lot:</p>
+      \[
+        \ell_{\mathrm{new}} = (c_y,\ c_y,\ y), \qquad \pi = 0
+      \]
+      <p class="note">
+        \(\ell.\text{costBasis}\) is captured per lot when the asset is created or
+        edited, independently of \(\ell.\text{value}\); for a position with
+        unrealised gains, \(\text{costBasis} &lt; \text{value}\). It is preserved
+        through yearly growth so the HIFO drawdown tax math reflects the actual
+        gain.
+      </p>
       <p class="example">
         <strong>Example.</strong> 10 years of 7&nbsp;% growth on \(10\,000\) with no contribution:
         \(10\,000 \cdot 1.07^{10} \approx 19\,671.51\).
@@ -338,7 +349,7 @@
 
       <!-- Bonds -->
       <h3 class="subsection-title">6.2 Bonds</h3>
-      <p>Parameters: yield \(\rho\), yield-tax rate \(\tau_\rho\), yearly contribution \(c\).</p>
+      <p>Parameters: yield \(\rho\), yield-tax rate \(\tau_\rho\), yearly contribution \(c\), contribution growth \(g\) (defaults to 0).</p>
       <p>Yield is computed on the value <em>before</em> the new contribution lot is added:</p>
       \[
         V \;=\; \sum_{\ell} \ell.\text{value}, \qquad
@@ -348,7 +359,7 @@
       \[
         \ell.\text{value}' = \ell.\text{value}, \qquad \ell.\text{costBasis}' = \ell.\text{costBasis}
       \]
-      <p>If \(\mathbb{1}_{\text{contrib}} \wedge c > 0\), append \(\ell_{\mathrm{new}} = (c, c, y)\).</p>
+      <p>If \(\mathbb{1}_{\text{contrib}} \wedge c_y > 0\) with \(c_y = c \cdot (1+g)^y\), append \(\ell_{\mathrm{new}} = (c_y,\ c_y,\ y)\).</p>
       <p class="example">
         <strong>Example.</strong> \(100\,000\) at 4&nbsp;% yield with 20&nbsp;% yield tax:
         \(100\,000 \cdot 0.04 \cdot 0.80 = 3\,200\).
@@ -358,8 +369,8 @@
       <h3 class="subsection-title">6.3 Crypto</h3>
       <p>
         Mathematically identical to <em>Stocks</em>: lots grow by \((1 + r)\), optional
-        contribution lot, and \(\pi = 0\). The class is kept separate to allow future
-        extensions (staking, on-chain yield, etc.).
+        contribution lot at \(c_y = c \cdot (1+g)^y\), and \(\pi = 0\). The class is
+        kept separate to allow future extensions (staking, on-chain yield, etc.).
       </p>
 
       <!-- Cash -->

@@ -406,4 +406,76 @@ export default function run({ test, assert, assertClose, assertDeepEqual }) {
     const at35 = traj.find((r) => r.age === 35);
     assertClose(at35.byClass.stocks, 1000, 1e-6, 'no growth, no contribs');
   });
+
+  // -------------------------------------------------------------------------
+  // COST BASIS + CONTRIBUTION GROWTH (TC2.31–TC2.34)
+  // -------------------------------------------------------------------------
+  test('TC2.31: createStocks honours explicit costBasis distinct from value', () => {
+    const a = createStocks({ value: 10000, costBasis: 6000, avgReturnRate: 0, yearlyContribution: 0 });
+    assert(a.lots.length === 1);
+    assertClose(a.lots[0].value, 10000, 1e-9);
+    assertClose(a.lots[0].costBasis, 6000, 1e-9);
+  });
+
+  test('TC2.32: stepStocks contribution at year y is c·(1+g)^y; g=0 reproduces flat behaviour', () => {
+    // g=0 → contribution stays at 1000 every year (legacy behaviour).
+    const flat = createStocks({ value: 0, avgReturnRate: 0, yearlyContribution: 1000, contributionGrowthRate: 0 });
+    const after3Flat = stepStocks(stepStocks(stepStocks(flat, { year: 1 }).asset, { year: 2 }).asset, { year: 3 }).asset;
+    // 3 contributed lots, all 1000.
+    const flatLots = after3Flat.lots.filter((l) => l.value > 0);
+    assert(flatLots.length === 3, 'expected 3 contributed lots');
+    flatLots.forEach((l) => assertClose(l.value, 1000, 1e-9));
+
+    // g=0.05 → year-3 contribution = 1000·1.05^3 ≈ 1157.625
+    const grown = createStocks({
+      value: 0, avgReturnRate: 0,
+      yearlyContribution: 1000, contributionGrowthRate: 0.05,
+    });
+    const r1 = stepStocks(grown, { year: 1 });
+    const r2 = stepStocks(r1.asset, { year: 2 });
+    const r3 = stepStocks(r2.asset, { year: 3 });
+    // Each contribution lot is added at its ctx.year value, so:
+    //   year 1: 1000·1.05^1 = 1050
+    //   year 2: 1000·1.05^2 = 1102.5
+    //   year 3: 1000·1.05^3 = 1157.625
+    const grownContribs = r3.asset.lots.filter((l) => l.value > 0).map((l) => l.value);
+    assertClose(grownContribs[0], 1050,    1e-6);
+    assertClose(grownContribs[1], 1102.5,  1e-6);
+    assertClose(grownContribs[2], 1157.625, 1e-6);
+  });
+
+  test('TC2.33: stepBonds yield is computed pre-contribution; contributionGrowthRate scales the lot', () => {
+    const b = createBonds({
+      value: 100000, yieldRate: 0.04, yieldTaxRate: 0,
+      yearlyContribution: 5000, contributionGrowthRate: 0.10,
+    });
+    // Year 2: yield is on 100000 (the pre-contribution principal at start of year 2),
+    // and the new lot added is 5000·1.10^2 = 6050.
+    const r1 = stepBonds(b, { year: 1 });
+    const r2 = stepBonds(r1.asset, { year: 2 });
+    // After year 1 we should have lots = [{100000}, {5500}], passiveIncome = 100000·0.04 = 4000.
+    assertClose(r1.passiveIncome, 4000, 1e-6);
+    const lotsAfter1 = r1.asset.lots.map((l) => l.value);
+    assertClose(lotsAfter1[0], 100000, 1e-6);
+    assertClose(lotsAfter1[1],   5500, 1e-6);
+    // After year 2 we add 5000·1.10^2 = 6050. Yield was on 105500.
+    assertClose(r2.passiveIncome, 105500 * 0.04, 1e-6);
+    const last = r2.asset.lots[r2.asset.lots.length - 1];
+    assertClose(last.value,     6050, 1e-6);
+    assertClose(last.costBasis, 6050, 1e-6);
+    assert(last.year === 2);
+  });
+
+  test('TC2.34: stepCrypto contribution growth mirrors stepStocks', () => {
+    const c = createCrypto({
+      value: 0, avgReturnRate: 0,
+      yearlyContribution: 200, contributionGrowthRate: 0.20,
+    });
+    const r1 = stepCrypto(c, { year: 1 });
+    // The starting lot (value 0) is preserved; the contribution lot is appended.
+    // 200 · 1.20^1 = 240
+    const contribLot = r1.asset.lots[r1.asset.lots.length - 1];
+    assertClose(contribLot.value, 240, 1e-9);
+    assertClose(contribLot.costBasis, 240, 1e-9);
+  });
 }
