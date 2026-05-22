@@ -89,9 +89,15 @@ export function mountAssetsChart(canvasEl, legendEl, store, rangeEl) {
 
     const datasets = presentClasses.map((cls) => {
       const color = CLASS_COLORS[cls.key] || '#666';
+      // Pension has no stored net worth (assetNetValue==0); plot its yearly
+      // income instead so the line is meaningful.
+      const isPension = cls.key === 'pension';
+      const data = isPension
+        ? traj.map((r) => r.pensionIncome ?? 0)
+        : traj.map((r) => r.byClass[cls.key] ?? 0);
       return {
-        label: cls.label,
-        data: traj.map((r) => r.byClass[cls.key] ?? 0),
+        label: isPension ? 'Pension (yearly)' : cls.label,
+        data,
         borderColor: color,
         backgroundColor: 'transparent',
         borderWidth: 2,
@@ -110,7 +116,7 @@ export function mountAssetsChart(canvasEl, legendEl, store, rangeEl) {
       h('span', {
         className: 'marker',
         attrs: { style: `color:${CLASS_COLORS[cls.key] || '#666'}` },
-        children: cls.label,
+        children: cls.key === 'pension' ? 'Pension (yearly)' : cls.label,
       }),
     );
     if (retirementInfo) {

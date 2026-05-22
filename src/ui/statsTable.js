@@ -89,13 +89,16 @@ export function mountStatsTable(mountEl, store) {
         children: formatter(v),
       }));
 
-    // Per-class rows (only classes that exist in state)
-    const classRows = presentClasses.map((cls) =>
-      h('tr', { children: [
-        h('td', { children: cls.label }),
+    // Per-class rows (only classes that exist in state). Pension is a
+    // special case: it has no stored value; we show its yearly income
+    // instead, and label the row to make that clear.
+    const classRows = presentClasses.map((cls) => {
+      const label = cls.key === 'pension' ? 'Pension (yearly income)' : cls.label;
+      return h('tr', { children: [
+        h('td', { children: label }),
         ...dataCells(stats.rows[cls.key]),
-      ]})
-    );
+      ]});
+    });
 
     const totalRow = h('tr', { className: 'total-row', children: [
       h('td', { children: 'Total net worth' }),

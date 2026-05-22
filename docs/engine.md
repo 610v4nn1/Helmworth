@@ -509,14 +509,24 @@ Runs `simulateStandard(state, { horizonAge: maxHorizon + age })` once and
 extracts year-`h` snapshots for every `h` in `horizons`.
 
 ```
-rows[c][i]                = trajectory[h].byClass[c]   for class c, horizon h
+rows[c][i]                = trajectory[h].byClass[c]      for class c ≠ 'pension', horizon h
+rows.pension[i]           = trajectory[h].pensionIncome   (pension is income-only)
+rows.pensionIncome[i]     = trajectory[h].pensionIncome   (alias for clarity)
 rows.total[i]             = trajectory[h].netWorth
 rows.monthlyExpenses[i]   = monthlyExpenses · (1 + inflationRate)^h
 rows.yearlyExpenses[i]    = monthlyExpenses[i] · 12
 ```
 
-Default horizons: `[0, 5, 10, 20]`. The `total` row equals the column-wise sum
-of all eight class rows by construction.
+Pension is special: it has no stored value (`assetNetValue(pension) === 0`),
+so a "net worth" column for it would always be zero. Instead the table
+exposes the pension's *yearly income* in that row (zero before
+`startingAge`, growing by `revaluationRate` afterwards). The UI labels the
+row "Pension (yearly income)" so users don't conflate it with capital.
+
+The `total` row excludes pension by construction (pension is a flow, not a
+stock), so `total[i] = sum(rows[c][i])` only for the non-pension classes.
+
+Default horizons: `[0, 5, 10, 20]`.
 
 ## Public engine API
 

@@ -79,6 +79,8 @@ function applyYearSales(assets, year) {
  * @property {number} netWorth      - Net worth at end of year
  * @property {Object<string, number>} byClass - Net worth broken down by class
  * @property {number} passiveIncome - Total passive income for the year
+ * @property {number} pensionIncome - Pension portion of passive income (subset of passiveIncome).
+ *                                    0 before any pension's startingAge.
  * @property {number} expenses      - Yearly expenses (12 · inflated monthly)
  * @property {number} debtPayments  - Total debt payments for the year
  */
@@ -148,6 +150,7 @@ export function simulateStandard(state, opts = {}) {
     netWorth: computeNetWorth(assets),
     byClass: computeNetWorthByClass(assets),
     passiveIncome: 0,
+    pensionIncome: 0,
     expenses: userInfo.monthlyExpenses * 12,
     debtPayments: 0,
   });
@@ -160,12 +163,16 @@ export function simulateStandard(state, opts = {}) {
     let totalPassiveIncome = 0;
     let totalDebtPayments = 0;
     let totalExtraExpense = 0;
+    let pensionIncome = 0;
 
     const newAssets = [];
     for (const a of assets) {
       const result = stepAsset(a, ctx);
       newAssets.push(result.asset);
       totalPassiveIncome += result.passiveIncome;
+      if (a.class === 'pension') {
+        pensionIncome += result.passiveIncome;
+      }
       if (typeof result.extraExpense === 'number') {
         totalExtraExpense += result.extraExpense;
       }
@@ -185,6 +192,7 @@ export function simulateStandard(state, opts = {}) {
       netWorth: computeNetWorth(assets),
       byClass: computeNetWorthByClass(assets),
       passiveIncome: totalPassiveIncome,
+      pensionIncome,
       expenses: monthlyInflated * 12 + totalExtraExpense,
       debtPayments: totalDebtPayments,
     });
@@ -222,6 +230,7 @@ export function simulateAndReturnAssets(state, opts = {}) {
     netWorth: computeNetWorth(assets),
     byClass: computeNetWorthByClass(assets),
     passiveIncome: 0,
+    pensionIncome: 0,
     expenses: userInfo.monthlyExpenses * 12,
     debtPayments: 0,
   });
@@ -232,11 +241,15 @@ export function simulateAndReturnAssets(state, opts = {}) {
     let totalPassiveIncome = 0;
     let totalDebtPayments = 0;
     let totalExtraExpense = 0;
+    let pensionIncome = 0;
     const newAssets = [];
     for (const a of assets) {
       const r = stepAsset(a, ctx);
       newAssets.push(r.asset);
       totalPassiveIncome += r.passiveIncome;
+      if (a.class === 'pension') {
+        pensionIncome += r.passiveIncome;
+      }
       if (typeof r.extraExpense === 'number') {
         totalExtraExpense += r.extraExpense;
       }
@@ -254,6 +267,7 @@ export function simulateAndReturnAssets(state, opts = {}) {
       netWorth: computeNetWorth(assets),
       byClass: computeNetWorthByClass(assets),
       passiveIncome: totalPassiveIncome,
+      pensionIncome,
       expenses: monthlyInflated * 12 + totalExtraExpense,
       debtPayments: totalDebtPayments,
     });

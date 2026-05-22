@@ -55,6 +55,7 @@ function applyYearSales(assets, year) {
  * @property {number} netWorth
  * @property {Object<string,number>} byClass
  * @property {number} passiveIncome
+ * @property {number} pensionIncome - Pension portion of passiveIncome (subset of passiveIncome).
  * @property {number} expenses
  * @property {number} debtPayments
  * @property {number} drawnDown      - cash drawn from liquid assets this year
@@ -117,6 +118,7 @@ export function simulateFire(state, opts) {
     netWorth: computeNetWorth(assets),
     byClass: computeNetWorthByClass(assets),
     passiveIncome: 0,
+    pensionIncome: 0,
     expenses: userInfo.monthlyExpenses * 12,
     debtPayments: 0,
     drawnDown: 0,
@@ -131,11 +133,15 @@ export function simulateFire(state, opts) {
     let totalPassiveIncome = 0;
     let totalDebtPayments = 0;
     let totalExtraExpense = 0;
+    let pensionIncome = 0;
     const newAssets = [];
     for (const a of assets) {
       const r = stepAsset(a, ctx);
       newAssets.push(r.asset);
       totalPassiveIncome += r.passiveIncome;
+      if (a.class === 'pension') {
+        pensionIncome += r.passiveIncome;
+      }
       if (typeof r.extraExpense === 'number') {
         totalExtraExpense += r.extraExpense;
       }
@@ -170,6 +176,7 @@ export function simulateFire(state, opts) {
       netWorth: computeNetWorth(assets),
       byClass: computeNetWorthByClass(assets),
       passiveIncome: totalPassiveIncome,
+      pensionIncome,
       expenses: yearlyExpenses,
       debtPayments: totalDebtPayments,
       drawnDown,

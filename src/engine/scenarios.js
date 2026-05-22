@@ -82,6 +82,7 @@ function simulatePiecewise(state, { horizonAge, coastAge }) {
     netWorth: computeNetWorth(assets),
     byClass: computeNetWorthByClass(assets),
     passiveIncome: 0,
+    pensionIncome: 0,
     expenses: userInfo.monthlyExpenses * 12,
     debtPayments: 0,
   });
@@ -94,11 +95,15 @@ function simulatePiecewise(state, { horizonAge, coastAge }) {
     let totalPassiveIncome = 0;
     let totalDebtPayments = 0;
     let totalExtraExpense = 0;
+    let pensionIncome = 0;
     const newAssets = [];
     for (const a of assets) {
       const r = stepAsset(a, ctx);
       newAssets.push(r.asset);
       totalPassiveIncome += r.passiveIncome;
+      if (a.class === 'pension') {
+        pensionIncome += r.passiveIncome;
+      }
       if (typeof r.extraExpense === 'number') {
         totalExtraExpense += r.extraExpense;
       }
@@ -116,6 +121,7 @@ function simulatePiecewise(state, { horizonAge, coastAge }) {
       netWorth: computeNetWorth(assets),
       byClass: computeNetWorthByClass(assets),
       passiveIncome: totalPassiveIncome,
+      pensionIncome,
       expenses: monthlyInflated * 12 + totalExtraExpense,
       debtPayments: totalDebtPayments,
     });
