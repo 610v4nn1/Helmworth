@@ -150,7 +150,7 @@ function buildDatasets(trajectory, startAge) {
   const expensesLine = slice.map((r) => (r.expenses ?? 0) + (r.debtPayments ?? 0));
   datasets.push({
     type: 'line',
-    label: 'Expenses + debt',
+    label: 'Expenses',
     data: expensesLine,
     borderColor: COLOR_EXPENSES,
     backgroundColor: 'transparent',
@@ -212,7 +212,7 @@ function legendItemsFromDatasets(datasets) {
           className: 'cov-swatch cov-swatch-line',
           attrs: { style: `background:${COLOR_EXPENSES}` },
         }),
-        'Expenses + debt',
+        'Expenses',
       ],
     }),
   );

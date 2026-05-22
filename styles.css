@@ -1290,6 +1290,12 @@ input, select { font-family: inherit; color: inherit; }
   .nw-label { margin-top: 110px; }
   .app-header { padding: var(--gap-sm) var(--gap-md); }
   .app-header h1 { font-size: 1.5rem; }
+  /* On mobile the brand + toolbar can't fit on one row, so let the header
+     wrap and center the toolbar buttons under the brand instead of
+     overflowing off the right edge. */
+  .app-header { flex-wrap: wrap; justify-content: center; }
+  .app-header .brand { flex: 1 1 100%; justify-content: center; }
+  .app-header .io-toolbar { margin-left: 0; justify-content: center; }
   .modal { padding: var(--gap-lg) var(--gap-md); }
   .form-actions { flex-direction: column-reverse; align-items: stretch; }
   .form-actions button { width: 100%; }
@@ -1707,8 +1713,15 @@ input, select { font-family: inherit; color: inherit; }
    Push the nav next to the brand and let the toolbar keep its right anchor. */
 .app-header { display: flex; align-items: center; gap: var(--gap-md); }
 .app-header .brand { display: inline-flex; align-items: center; }
-.app-header .io-toolbar { margin-left: auto; }
-.app-header .header-nav + .io-toolbar { margin-left: var(--gap-md); }
+/* Only anchor the toolbar to the right on viewports wide enough to hold
+   the brand and the toolbar on a single row; on narrower screens the
+   responsive media query above wraps the header and centers the toolbar
+   under the brand, so we must NOT push it right with auto margin (that
+   would override the centering and cause overflow off the right edge). */
+@media (min-width: 721px) {
+  .app-header .io-toolbar { margin-left: auto; }
+  .app-header .header-nav + .io-toolbar { margin-left: var(--gap-md); }
+}
 
 @media (max-width: 720px) {
   .header-nav-link {
@@ -2096,8 +2109,22 @@ mjx-container { color: var(--fg-strong); }
   padding: 0 0.25rem;
 }
 
+/* Each group label (and the trailing standalone "Expenses + debt" marker)
+   forces a new line in the legend so passive income, drawdown and
+   expenses are visually separated rather than bunched on one row. */
+.cov-legend-group,
+.coverage-legend > .cov-marker:last-child {
+  flex-basis: 100%;
+}
+
 .cov-legend-group:not(:first-child) {
-  margin-left: var(--gap-sm);
+  margin-top: var(--gap-xs);
+}
+
+/* Also push the trailing "Expenses" marker onto its own visual row, so it
+   doesn't appear glued to the passive-income / drawdown pills above. */
+.coverage-legend > .cov-marker:last-child {
+  margin-top: var(--gap-xs);
 }
 
 .cov-marker {

@@ -162,6 +162,33 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
   }
   applyConditionalVisibility();
 
+  // Update — gathers the current values from every input, applies them to
+  // the store as a single batched patch, then closes the expanded card.
+  // We can't rely solely on the per-field `change` listener: if the user
+  // clicks Update while still editing an input, in some browsers the
+  // input's `change` event won't fire before our handler runs (the
+  // button click doesn't always blur the input first), so the latest
+  // edits would be lost.
+  const commitAndClose = (e) => {
+    e.stopPropagation();
+    // Read every field's current value and build a single patch.
+    const patch = {};
+    for (const f of fields) {
+      const input = fieldInputs[f.key];
+      if (!input) continue;
+      const r = readField(f, input);
+      if (r.error) continue; // skip invalid fields, keep prior value
+      patch[f.key] = r.value;
+    }
+    // Apply synchronously — the overlay is about to be torn down
+    // anyway, so the deferral dance the `change` handler does is
+    // unnecessary here.
+    if (Object.keys(patch).length > 0) {
+      store.updateAsset(asset.id, patch);
+    }
+    onToggleExpand(null);
+  };
+
   const actions = h('div', { className: 'form-actions card-actions', children: [
     h('button', {
       className: 'delete-btn',
@@ -184,34 +211,22 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       }},
       children: 'Delete',
     }),
-    // Update — closes the expanded card. The expanded card auto-saves on
-    // every field's `change` event (the listener above defers the save
-    // to a microtask, so it doesn't tear down the DOM mid-click).
-    //
-    // We bind BOTH `mousedown` and `click`. The `mousedown` path is a
-    // safety net for Firefox/macOS, where focusing a <button> blurs the
-    // active input synchronously and can swallow the trailing `click`
-    // if anything ends up rebuilding the overlay between mousedown and
-    // mouseup. Closing on `mousedown` guarantees first-click response;
-    // the redundant `click` handler keeps keyboard activation
-    // (Enter/Space on a focused button) working too — by then the card
-    // is already closed and `onToggleExpand(null)` is a no-op.
+    // We bind BOTH `mousedown` and `click` for Update. The `mousedown`
+    // path is a safety net for Firefox/macOS where the trailing `click`
+    // can be swallowed when the overlay is rebuilt mid-click. Closing on
+    // `mousedown` guarantees first-click response; the redundant `click`
+    // handler keeps keyboard activation (Enter/Space on a focused button)
+    // working too — by then the card is already closed and the second
+    // call is a no-op (overlay no longer in the DOM).
     h('button', {
       className: 'update-btn',
-      attrs: { type: 'button', 'aria-label': 'Close and apply changes' },
+      attrs: { type: 'button', 'aria-label': 'Save changes and close' },
       on: {
         mousedown: (e) => {
           if (e.button !== 0) return; // primary (left) only
-          e.stopPropagation();
-          // We do NOT preventDefault — that would prevent focus changes
-          // and the natural input blur that fires `change`. We want
-          // `change` to still fire (deferred to a microtask).
-          onToggleExpand(null);
+          commitAndClose(e);
         },
-        click: (e) => {
-          e.stopPropagation();
-          onToggleExpand(null);
-        },
+        click: commitAndClose,
       },
       children: 'Update',
     }),
