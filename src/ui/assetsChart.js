@@ -45,6 +45,10 @@ const CLASS_COLORS = {
 
 const COLOR_GRID  = 'rgba(0, 0, 0, 0.08)';
 const COLOR_TICKS = 'rgba(0, 0, 0, 0.62)';
+const COLOR_RETIRE = '#5b6573'; // neutral slate — same as projections chart
+
+// Match font size used for the per-marker label on the projections chart.
+const FONT_SIZE_MARKER_LABEL = 12;
 
 /**
  * Mounts the per-asset-class projection chart and wires it to the store.
@@ -101,14 +105,59 @@ export function mountAssetsChart(canvasEl, legendEl, store, rangeEl) {
     return { labels, datasets, presentClasses };
   }
 
-  function renderLegend(presentClasses) {
-    setChildren(legendEl, presentClasses.map((cls) =>
+  function renderLegend(presentClasses, retirementInfo) {
+    const items = presentClasses.map((cls) =>
       h('span', {
         className: 'marker',
         attrs: { style: `color:${CLASS_COLORS[cls.key] || '#666'}` },
         children: cls.label,
       }),
-    ));
+    );
+    if (retirementInfo) {
+      items.push(
+        h('span', {
+          className: 'marker',
+          attrs: { style: `color:${COLOR_RETIRE}` },
+          children: `Retirement at age ${retirementInfo.retirementAge}`,
+        }),
+      );
+    }
+    setChildren(legendEl, items);
+  }
+
+  /**
+   * Vertical-line plugin that draws a marker on the "years from now" x-axis
+   * at the user's retirement age, converted to years-from-now via
+   * `yearsFromNow = retirementAge - currentAge`. Skipped when the retirement
+   * age is in the past (≤ currentAge — already retired) or beyond the
+   * chart's horizon, since neither case yields a meaningful future marker.
+   */
+  function retirementVlinePlugin(yearsFromNow, retirementAge) {
+    return {
+      id: 'retirementMarker',
+      afterDraw(chartInst) {
+        if (yearsFromNow == null) return;
+        const { ctx, chartArea, scales } = chartInst;
+        if (!scales.x) return;
+        const x = scales.x.getPixelForValue(yearsFromNow);
+        if (x < chartArea.left || x > chartArea.right) return;
+        ctx.save();
+        ctx.strokeStyle = COLOR_RETIRE;
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(x, chartArea.top);
+        ctx.lineTo(x, chartArea.bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = COLOR_RETIRE;
+        ctx.font = `${FONT_SIZE_MARKER_LABEL}px ${FONT_FAMILY}`;
+        ctx.textAlign = 'left';
+        ctx.fillText(`Retirement (${retirementAge})`, x + 4, chartArea.top + 12);
+        ctx.restore();
+      },
+    };
   }
 
   function render() {
@@ -133,7 +182,16 @@ export function mountAssetsChart(canvasEl, legendEl, store, rangeEl) {
 
     const { labels, datasets, presentClasses } = buildDatasets(state);
 
-    renderLegend(presentClasses);
+    // Retirement marker: convert userInfo.retirementAge -> yearsFromNow.
+    // Skip if it falls outside the chart's [0, HORIZON_YEARS] window.
+    const retirementAge = state.userInfo.retirementAge;
+    const retirementYearsFromNow = retirementAge - state.userInfo.age;
+    const retirementInfo =
+      retirementYearsFromNow >= 0 && retirementYearsFromNow <= HORIZON_YEARS
+        ? { retirementAge, yearsFromNow: retirementYearsFromNow }
+        : null;
+
+    renderLegend(presentClasses, retirementInfo);
 
     // Year-range zoom control. The chart's x-axis is "years from now"
     // (0..HORIZON_YEARS); we surface it to the user as calendar years.
@@ -232,6 +290,9 @@ export function mountAssetsChart(canvasEl, legendEl, store, rangeEl) {
           },
         },
       },
+      plugins: retirementInfo
+        ? [retirementVlinePlugin(retirementInfo.yearsFromNow, retirementInfo.retirementAge)]
+        : [],
     });
   }
 

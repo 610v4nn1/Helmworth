@@ -133,9 +133,15 @@ function simulatePiecewise(state, { horizonAge, coastAge }) {
  *   3. At retirement age R, the 4% rule holds:
  *        passiveIncome(R) + 0.04 · netWorth(R) ≥ inflatedYearlyExpenses(R)
  *
- * Retirement age R is taken from the earliest pension `startingAge` if the
- * user has any pension assets. Otherwise R defaults to `DEFAULT_RETIREMENT_AGE`
- * (65) — a sensible "during retirement" target when no pension is configured.
+ * **Retirement age R precedence (highest to lowest):**
+ *   1. `opts.retirementAge`                    — explicit per-call override
+ *   2. `state.userInfo.retirementAge`          — user setting from the form
+ *   3. `min(pension.startingAge)`              — auto-detected from pensions
+ *   4. `DEFAULT_RETIREMENT_AGE` (67)           — fallback default
+ *
+ * The user-set `userInfo.retirementAge` therefore wins over an auto-detected
+ * pension age: a user with a pension that starts at 70 but who plans to
+ * retire at 60 will be evaluated against age 60.
  *
  * This is monotone in X: if stopping at X works, stopping later than X also
  * works (more accumulation, same retirement target). Therefore the earliest
@@ -146,7 +152,7 @@ function simulatePiecewise(state, { horizonAge, coastAge }) {
  * @param {Object} state
  * @param {Object} [opts]
  * @param {number} [opts.horizonAge=100]
- * @param {number} [opts.retirementAge] Override the auto-detected retirement age
+ * @param {number} [opts.retirementAge] Override the user's retirement age (and any auto-detection)
  * @returns {number|null} Earliest Coast FIRE age X, or null if infeasible
  *
  * @formula
@@ -162,7 +168,8 @@ function simulatePiecewise(state, { horizonAge, coastAge }) {
  *
  * @assumptions
  *   - Net worth includes all asset classes except pension (income-only).
- *   - Retirement age = earliest pension startingAge, or 65 if no pension.
+ *   - Retirement age precedence: opts.retirementAge > userInfo.retirementAge
+ *     > min(pension.startingAge) > DEFAULT_RETIREMENT_AGE (67).
  *
  * Cross-reference: see "Coast FIRE check" in
  *   [engine.md](../../docs/engine.md#coast-fire-check).
@@ -171,14 +178,18 @@ export function findCoastFireAge(state, opts = {}) {
   const horizonAge = opts.horizonAge ?? DEFAULT_HORIZON_AGE;
   const startAge = state.userInfo.age;
 
-  // Retirement age = earliest pension startingAge, or DEFAULT_RETIREMENT_AGE.
-  // The user may override via opts.retirementAge.
+  // Retirement age precedence:
+  //   opts.retirementAge > userInfo.retirementAge > min(pension.startingAge) > default.
+  const userInfoR =
+    typeof state.userInfo?.retirementAge === 'number' &&
+    Number.isFinite(state.userInfo.retirementAge)
+      ? state.userInfo.retirementAge
+      : null;
   const pensions = (state.assets || []).filter((a) => a.class === 'pension');
-  const autoRetirement =
-    pensions.length > 0
-      ? Math.min(...pensions.map((p) => p.startingAge))
-      : DEFAULT_RETIREMENT_AGE;
-  const retirementAge = opts.retirementAge ?? autoRetirement;
+  const pensionR =
+    pensions.length > 0 ? Math.min(...pensions.map((p) => p.startingAge)) : null;
+  const retirementAge =
+    opts.retirementAge ?? userInfoR ?? pensionR ?? DEFAULT_RETIREMENT_AGE;
 
   // If retirementAge is in the past or equals startAge, there's no time to
   // accumulate — feasibility test happens immediately at currentAge.
@@ -197,11 +208,13 @@ export function findCoastFireAge(state, opts = {}) {
 }
 
 /**
- * Default retirement age used when the user has no pension configured.
+ * Default retirement age used when neither a user override nor a pension is
+ * configured. 67 matches the current statutory default in many EU countries
+ * (including the app's locked country, Germany).
  * @pure
  * @type {number}
  */
-const DEFAULT_RETIREMENT_AGE = 65;
+const DEFAULT_RETIREMENT_AGE = 67;
 
 /**
  * Feasibility of stopping contributions at age X, evaluated at the retirement

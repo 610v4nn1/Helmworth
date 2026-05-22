@@ -152,12 +152,16 @@ export function reduceApplyCountryDefaults(state, countryCode) {
 
 /**
  * Migrates a loaded state object so it conforms to the current schema.
- * Currently handles the real-estate refactor: drops the now-unused
- * `mortgageInterestRate`, `monthlyRent`, `rentalIncomeTaxRate` fields,
- * defaults `propertyKind` to `'investment'`, ensures `cashFlow` /
- * `yearlyCosts` are present, and migrates `mortgageYearlyRepayment`
- * (currency amount) to `mortgageRepaymentRate` (decimal fraction of
- * the outstanding balance).
+ *
+ * Handles:
+ *  - Real-estate refactor: drops the now-unused `mortgageInterestRate`,
+ *    `monthlyRent`, `rentalIncomeTaxRate` fields, defaults `propertyKind`
+ *    to `'investment'`, ensures `cashFlow` / `yearlyCosts` are present,
+ *    and migrates `mortgageYearlyRepayment` (currency amount) to
+ *    `mortgageRepaymentRate` (decimal fraction of the outstanding balance).
+ *  - Backfills `userInfo.retirementAge` (default 67) for states persisted
+ *    before this field existed. Re-runs `createUserInfo` on the loaded
+ *    `userInfo`, which fills in any missing defaults and re-validates.
  *
  * Idempotent: applying it twice yields the same result.
  *
@@ -168,7 +172,18 @@ export function reduceApplyCountryDefaults(state, countryCode) {
 export function migrateState(state) {
   if (!state || typeof state !== 'object') return state;
   const assets = Array.isArray(state.assets) ? state.assets.map(migrateAsset) : state.assets;
-  return { ...state, assets };
+  // Backfill missing userInfo fields (e.g. retirementAge on pre-v0.2 states).
+  // createUserInfo will throw on truly malformed values; in that case fall
+  // back to the persisted userInfo as-is so we don't silently lose data.
+  let userInfo = state.userInfo;
+  if (userInfo && typeof userInfo === 'object') {
+    try {
+      userInfo = createUserInfo(userInfo);
+    } catch (_err) {
+      // Leave userInfo untouched; the load path will re-detect bad shape.
+    }
+  }
+  return { ...state, userInfo, assets };
 }
 
 /**

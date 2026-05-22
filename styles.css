@@ -1240,6 +1240,46 @@ input, select { font-family: inherit; color: inherit; }
   font-size: 1rem;
 }
 
+/* Retirement column — subtle slate tint + small badge in the header to
+   draw the eye to the milestone column without competing with .total-row
+   (which uses the LinkedIn blue accent). */
+.stats-table th.retirement-col,
+.stats-table td.retirement-col {
+  background: rgba(91, 101, 115, 0.08); /* COLOR_RETIRE @ ~8% */
+  border-left: 1px solid rgba(91, 101, 115, 0.30);
+  border-right: 1px solid rgba(91, 101, 115, 0.30);
+}
+
+.stats-table thead th.retirement-col {
+  background: rgba(91, 101, 115, 0.16);
+}
+
+/* When .total-row coincides with the retirement column, keep the blue
+   accent but layer the slate border so the milestone is still visible. */
+.stats-table .total-row td.retirement-col {
+  background: var(--li-blue-soft);
+  border-left: 1px solid rgba(91, 101, 115, 0.40);
+  border-right: 1px solid rgba(91, 101, 115, 0.40);
+}
+
+.stats-table .th-line {
+  /* Header column label sits above the retirement badge. */
+  display: block;
+}
+
+.stats-table .retirement-badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #5b6573;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
 /* =========================================================================
    RESPONSIVE
    ========================================================================= */

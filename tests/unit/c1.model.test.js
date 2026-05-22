@@ -43,6 +43,24 @@ export default function run({ test, assert, assertClose, assertDeepEqual, assert
     assertClose(info.inflationRate, 0.5, 0.0001);
   });
 
+  test('TC1.3a: createUserInfo({}) defaults retirementAge to 67', () => {
+    const info = createUserInfo({});
+    assert(info.retirementAge === 67, `expected 67, got ${info.retirementAge}`);
+  });
+
+  test('TC1.3b: createUserInfo({ retirementAge: 60 }) accepts override', () => {
+    const info = createUserInfo({ retirementAge: 60 });
+    assert(info.retirementAge === 60, `expected 60, got ${info.retirementAge}`);
+  });
+
+  test('TC1.3c: createUserInfo({ retirementAge: -1 }) throws', () => {
+    assertThrows(() => createUserInfo({ retirementAge: -1 }), 'negative retirement age should throw');
+  });
+
+  test('TC1.3d: createUserInfo({ retirementAge: 121 }) throws', () => {
+    assertThrows(() => createUserInfo({ retirementAge: 121 }), 'retirement age > 120 should throw');
+  });
+
   // -------------------------------------------------------------------------
   // ASSET FACTORY TESTS
   // -------------------------------------------------------------------------

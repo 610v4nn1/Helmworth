@@ -46,6 +46,29 @@ export function mountUserInfoForm(mountEl, store) {
         }),
       ]}),
 
+      // Retirement age — used by findCoastFireAge and shown as a vertical
+      // marker on the projection charts and a highlighted row in the stats
+      // table. Defaults to 67. The user may set this below their current
+      // age (already retired) or above; the engine clamps as needed.
+      h('div', { className: 'field', children: [
+        h('label', { attrs: { for: 'ui-retirement-age' }, children: 'Retirement age' }),
+        h('input', {
+          attrs: {
+            id: 'ui-retirement-age', type: 'number', min: '0', max: '120', step: '1',
+            value: String(ui.retirementAge),
+          },
+          on: { input: (e) => {
+            const v = Number(e.target.value);
+            if (Number.isFinite(v) && v >= 0 && v <= 120) {
+              store.setState({
+                ...store.getState(),
+                userInfo: { ...store.getState().userInfo, retirementAge: Math.floor(v) },
+              });
+            }
+          }},
+        }),
+      ]}),
+
       // Monthly expenses
       h('div', { className: 'field', children: [
         h('label', { attrs: { for: 'ui-expenses' }, children: 'Monthly expenses' }),

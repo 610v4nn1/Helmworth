@@ -24,7 +24,7 @@ public API in [`index.js`](./index.js).
 | **Currency**              | Single, unspecified currency. The engine never formats numbers.                             |
 | **Capital losses**        | Do **not** create a tax credit; gains are clamped at 0 before applying CGT.                 |
 | **Default horizon age**   | `100`. Override with `opts.horizonAge`.                                                     |
-| **Default retirement age**| `65` (when no pension exists). Otherwise `min(pension.startingAge)`.                        |
+| **Default retirement age**| `67`. Source order: `opts.retirementAge` > `userInfo.retirementAge` > `min(pension.startingAge)` > `67`. |
 | **Safe withdrawal rate**  | `0.04` (the "4 % rule"), exported as `SAFE_WITHDRAWAL_RATE`.                                |
 
 ### Notation used in this README
@@ -72,6 +72,7 @@ The engine consumes the state shape produced by `src/model/` and `src/state.js`:
 state = {
   userInfo: {
     age:             number,   // integer years
+    retirementAge:   number,   // integer years, default 67
     country:         string,   // ISO code, only used for defaults at form time
     monthlyExpenses: number,   // today's currency, ≥ 0
     inflationRate:   number,   // decimal, e.g. 0.02
@@ -422,15 +423,16 @@ If `coastAge ≥ horizonAge`, this reduces to `simulateStandard`.
 2. Stop contributing afterward; assets compound on their own.
 3. At retirement age `R`, the **4 % rule** holds.
 
-Retirement age:
+Retirement age (precedence — first match wins):
 
 $$
 R \;=\;
 \begin{cases}
+\text{opts.retirementAge}                                    & \text{if provided} \\
+\text{userInfo.retirementAge}                                & \text{if set on the user} \\
 \min \{\,\text{startingAge} : a.\text{class} = \text{pension}\,\} & \text{if any pension exists} \\
-65 & \text{otherwise}
+67 & \text{otherwise (default)}
 \end{cases}
-\quad \text{(override via opts.retirementAge)}
 $$
 
 Let `simulateCoastFire(state, { coastAge: X })` evolve the assets to age `R`.

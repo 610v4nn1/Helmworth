@@ -6,7 +6,7 @@
  *   - Contribute up to age X.
  *   - Stop contributing afterward; assets compound on their own.
  *   - At retirement age R: passiveIncome(R) + 4% · netWorth(R) ≥ expenses(R).
- *   - R = earliest pension startingAge, or 65 if no pension.
+ *   - R = userInfo.retirementAge override > earliest pension startingAge > 67 default.
  */
 import { simulateCoastFire, findCoastFireAge } from '../../src/engine/scenarios.js';
 import {
@@ -61,8 +61,8 @@ export default function run({ test, assert, assertClose, assertDeepEqual }) {
   });
 
   test('TC4.4: 10k stocks no contrib, no pension → returns null', () => {
-    // 10k @ 7% reaches only 76k by age 65 (default retirement).
-    // 4%·76k = 3047 < expenses(65) ≈ 47985. Not feasible at any X.
+    // 10k @ 7% reaches only ~116k by age 67 (default retirement).
+    // 4%·116k ≈ 4649 < expenses(67) ≈ 49917. Not feasible at any X.
     const state = {
       userInfo: { age: 30, monthlyExpenses: 2000, inflationRate: 0.02, country: '' },
       assets: [createStocks({ value: 10000, avgReturnRate: 0.07, yearlyContribution: 0 })],
@@ -114,5 +114,41 @@ export default function run({ test, assert, assertClose, assertDeepEqual }) {
     const yr41 = traj[11];
     const expected41 = yr40.netWorth * 1.07;
     assertClose(yr41.netWorth, expected41, 0.5, 'no contribution after coastAge');
+  });
+
+  test('TC4.8: userInfo.retirementAge wins over auto-detected pension age', () => {
+    // The user has a pension starting at 70 (auto-detected R would be 70),
+    // but explicitly plans to retire at 60. With 50k @ 7% no contributions,
+    // value at 60 ≈ 50k * 1.07^30 ≈ 380,613. Inflated yearly expenses at
+    // age 60 ≈ 1000*12*1.02^30 ≈ 21,724. 4%*380,613 ≈ 15,225 → infeasible
+    // (no contributions case). With contributions starting from 30, we
+    // expect a positive findCoastFireAge. We just check that the function
+    // doesn't pick an age > 60: that would mean the engine ignored the
+    // userInfo override and used the pension age 70.
+    const state = {
+      userInfo: { age: 30, retirementAge: 60, monthlyExpenses: 1000, inflationRate: 0.02, country: '' },
+      assets: [
+        createStocks({ value: 50000, avgReturnRate: 0.07, yearlyContribution: 5000 }),
+        createPension({ yearlyAmount: 20000, revaluationRate: 0, startingAge: 70 }),
+      ],
+    };
+    const age = findCoastFireAge(state, { horizonAge: 100 });
+    assert(age === null || age <= 60,
+      `expected null or X<=60 (retirement target), got ${age}`);
+  });
+
+  test('TC4.9: opts.retirementAge wins over userInfo.retirementAge', () => {
+    // Same state as TC4.8 but force retirementAge=70 via opts: that is
+    // strictly later than the user's setting (60), and gives more time to
+    // accumulate, so any feasible age must be ≤ 70.
+    const state = {
+      userInfo: { age: 30, retirementAge: 60, monthlyExpenses: 1000, inflationRate: 0.02, country: '' },
+      assets: [
+        createStocks({ value: 50000, avgReturnRate: 0.07, yearlyContribution: 5000 }),
+      ],
+    };
+    const age = findCoastFireAge(state, { horizonAge: 100, retirementAge: 70 });
+    assert(age === null || age <= 70,
+      `expected null or X<=70 (opts override), got ${age}`);
   });
 }

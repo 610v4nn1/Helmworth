@@ -40,6 +40,7 @@ const FONT_SIZE_MARKER_LABEL = 12;
 const COLOR_STANDARD = '#0a66c2'; // --li-blue (primary brand)
 const COLOR_COAST    = '#378fe9'; // --li-sky  (secondary brand)
 const COLOR_FIRE     = '#c11574'; // --accent-magenta (highlight)
+const COLOR_RETIRE   = '#5b6573'; // neutral slate — distinct from scenario lines
 const COLOR_GRID     = 'rgba(0, 0, 0, 0.08)';
 const COLOR_TICKS    = 'rgba(0, 0, 0, 0.62)'; // matches --fg-dim
 
@@ -141,10 +142,10 @@ export function mountChart(canvasEl, annotationsEl, store, rangeEl) {
       });
     }
 
-    return { labels, datasets, coastAge, fireAge, startAge };
+    return { labels, datasets, coastAge, fireAge, startAge, retirementAge: state.userInfo.retirementAge };
   }
 
-  function renderAnnotations({ coastAge, fireAge }) {
+  function renderAnnotations({ coastAge, fireAge, retirementAge }) {
     setChildren(annotationsEl, [
       h('span', { className: 'marker', attrs: { style: `color:${COLOR_STANDARD}` }, children: 'Standard' }),
       h('span', { className: 'marker', attrs: { style: `color:${COLOR_COAST}` },
@@ -157,16 +158,19 @@ export function mountChart(canvasEl, annotationsEl, store, rangeEl) {
           ? `FIRE achievable at age ${fireAge}`
           : 'FIRE not achievable by 85',
       }),
+      h('span', { className: 'marker', attrs: { style: `color:${COLOR_RETIRE}` },
+        children: `Retirement at age ${retirementAge}`,
+      }),
     ]);
   }
 
-  function vlinePlugin(coastAge, fireAge, startAge) {
+  function vlinePlugin(coastAge, fireAge, retirementAge) {
     return {
       id: 'ageMarkers',
       afterDraw(chartInst) {
         const { ctx, chartArea, scales } = chartInst;
         if (!scales.x) return;
-        const drawLine = (age, color) => {
+        const drawLine = (age, color, label) => {
           if (age == null) return;
           const x = scales.x.getPixelForValue(age);
           if (x < chartArea.left || x > chartArea.right) return;
@@ -184,11 +188,14 @@ export function mountChart(canvasEl, annotationsEl, store, rangeEl) {
           ctx.fillStyle = color;
           ctx.font = `${FONT_SIZE_MARKER_LABEL}px ${FONT_FAMILY}`;
           ctx.textAlign = 'left';
-          ctx.fillText(`age ${age}`, x + 4, chartArea.top + 12);
+          ctx.fillText(label, x + 4, chartArea.top + 12);
           ctx.restore();
         };
-        drawLine(coastAge, COLOR_COAST);
-        drawLine(fireAge, COLOR_FIRE);
+        // Retirement first, so scenario markers (Coast/FIRE) draw on top if
+        // they happen to fall on the same age.
+        drawLine(retirementAge, COLOR_RETIRE, `Retirement (${retirementAge})`);
+        drawLine(coastAge, COLOR_COAST, `age ${coastAge}`);
+        drawLine(fireAge, COLOR_FIRE, `age ${fireAge}`);
       },
     };
   }
@@ -214,9 +221,9 @@ export function mountChart(canvasEl, annotationsEl, store, rangeEl) {
     }
     if (wrap) wrap.classList.remove('empty');
 
-    const { labels, datasets, coastAge, fireAge, startAge } = buildDatasets(state);
+    const { labels, datasets, coastAge, fireAge, startAge, retirementAge } = buildDatasets(state);
 
-    renderAnnotations({ coastAge, fireAge });
+    renderAnnotations({ coastAge, fireAge, retirementAge });
 
     // Year-range zoom control. Translate ages to calendar years for the UI:
     // year = currentCalendarYear + (age - startAge).
@@ -312,7 +319,7 @@ export function mountChart(canvasEl, annotationsEl, store, rangeEl) {
           },
         },
       },
-      plugins: [vlinePlugin(coastAge, fireAge, startAge)],
+      plugins: [vlinePlugin(coastAge, fireAge, retirementAge)],
     });
   }
 

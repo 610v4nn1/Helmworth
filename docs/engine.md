@@ -406,8 +406,11 @@ then stop contributing afterward. Equivalent to Standard when
 contributing and still meet the 4% rule **at retirement**.
 
 ```
-retirementAge R = earliest pension startingAge, or 65 if no pension exists.
-                  (Override via opts.retirementAge.)
+retirementAge R precedence (first match wins):
+  1. opts.retirementAge                  — explicit per-call override
+  2. state.userInfo.retirementAge        — user setting from the form
+  3. min(pension.startingAge)            — auto-detected from pensions
+  4. 67                                  — default
 
 For candidate stop-age X in [currentAge, R]:
   Run simulateCoastFire(state, { coastAge: X })
