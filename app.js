@@ -11,7 +11,6 @@ import { openAssetPicker }   from './src/ui/assetPicker.js';
 import { mountChart }        from './src/ui/chart.js';
 import { mountStatsTable }   from './src/ui/statsTable.js';
 import { mountAssetsChart }  from './src/ui/assetsChart.js';
-import { mountCoverageChart } from './src/ui/coverageChart.js';
 import { mountImportExport } from './src/ui/importExport.js';
 
 const store = createStore();
@@ -50,22 +49,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('assets-chart-legend'),
     store,
     document.getElementById('assets-range'),
-  );
-
-  mountCoverageChart(
-    document.getElementById('fire-coverage-chart'),
-    document.getElementById('fire-coverage-legend'),
-    document.getElementById('fire-coverage-status'),
-    store,
-    { startAgeMode: 'fire' },
-  );
-
-  mountCoverageChart(
-    document.getElementById('retirement-coverage-chart'),
-    document.getElementById('retirement-coverage-legend'),
-    document.getElementById('retirement-coverage-status'),
-    store,
-    { startAgeMode: 'retirement' },
   );
 
   mountImportExport(
