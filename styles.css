@@ -589,6 +589,32 @@ input, select { font-family: inherit; color: inherit; }
   box-shadow: 0 4px 10px rgba(204, 16, 22, 0.30);
 }
 
+/* Update button — primary pill on the right of the expanded card actions row.
+   Saves are automatic; this button just closes the card. */
+.asset-card .update-btn {
+  background: var(--card-color, var(--li-blue, #0a66c2));
+  border: 1px solid var(--card-color, var(--li-blue, #0a66c2));
+  color: #ffffff;
+  padding: 0.3rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: filter 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+
+.asset-card .update-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 12px rgba(10, 102, 194, 0.30);
+}
+
+.asset-card .update-btn:active { transform: scale(0.97); }
+
+/* Push Delete to the left and Update to the right inside the expanded card. */
+.asset-card .form-actions.card-actions {
+  justify-content: space-between;
+}
+
 .asset-card.cls-stocks          { --card-color: var(--class-stocks); }
 .asset-card.cls-bonds           { --card-color: var(--class-bonds); }
 .asset-card.cls-crypto          { --card-color: var(--class-crypto); }

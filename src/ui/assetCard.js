@@ -172,6 +172,20 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
       }},
       children: 'Delete',
     }),
+    // Update — closes the expanded card. The card auto-saves on every
+    // field's `change` event, so this button only needs to call the same
+    // close path as the × button in the header. Behaviour and handler
+    // are deliberately identical to closeBtn above; if closeBtn closes
+    // on the first click, this one does too.
+    h('button', {
+      className: 'update-btn',
+      attrs: { type: 'button', 'aria-label': 'Close and apply changes' },
+      on: { click: (e) => {
+        e.stopPropagation();
+        onToggleExpand(null);
+      }},
+      children: 'Update',
+    }),
   ]});
 
   overlay.appendChild(fieldsEl);
