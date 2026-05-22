@@ -139,7 +139,19 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
     input.addEventListener('change', () => {
       const r = readField(f, input);
       if (r.error) return;
-      store.updateAsset(asset.id, { [f.key]: r.value });
+      // Defer the store update to a microtask. If `change` fires as part
+      // of a click sequence on a sibling button (e.g. Update or Delete),
+      // a synchronous `store.updateAsset` here would call `setState` ->
+      // `notify` -> `assetList.render()`, which destroys the overlay
+      // (and the button being clicked). Firefox specifically suppresses
+      // the trailing `click` event when the mousedown target is removed
+      // between mousedown and mouseup, so the user's click would be
+      // swallowed and they'd have to click a second time. Deferring the
+      // store update lets the click handler complete first.
+      const id = asset.id;
+      const key = f.key;
+      const value = r.value;
+      Promise.resolve().then(() => store.updateAsset(id, { [key]: value }));
     });
     // Refresh visibility when controller fields change. (The store update
     // above will trigger a full re-render too, but doing it locally avoids
