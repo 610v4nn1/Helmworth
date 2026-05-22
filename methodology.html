@@ -387,21 +387,25 @@
       \[
         \pi \;=\;
         \begin{cases}
-          \mathrm{CF} & \text{if } \kappa_p = \text{investment} \\
-          0           & \text{if } \kappa_p = \text{residence}
+          \max(\mathrm{CF},\ 0) & \text{if } \kappa_p = \text{investment} \\
+          0                     & \text{if } \kappa_p = \text{residence}
         \end{cases}
         \qquad
         \kappa_a \;=\;
         \begin{cases}
-          0 & \text{if } \kappa_p = \text{investment} \\
-          K & \text{if } \kappa_p = \text{residence}
+          \max(-\mathrm{CF},\ 0) & \text{if } \kappa_p = \text{investment} \\
+          K                      & \text{if } \kappa_p = \text{residence}
         \end{cases}
       \]
       <p class="note">
-        The mortgage has <em>no</em> interest accrual in this model — a fixed fraction
-        \(\rho_M\) of the outstanding balance is repaid each year. For investment property,
-        any interest the user actually pays is expected to already be netted into
-        \(\mathrm{CF}\), which may be negative.
+        For an investment property, a positive cash flow is reported as
+        passive income and a negative one as an extra expense (never as
+        negative passive income). The two cases never both fire, so
+        \(\pi\) and \(\kappa_a\) cannot both be positive in the same year.
+        The mortgage has <em>no</em> interest accrual in this model — a
+        fixed fraction \(\rho_M\) of the outstanding balance is repaid
+        each year. Any interest the user actually pays is expected to
+        already be netted into \(\mathrm{CF}\).
       </p>
 
       <!-- Private business -->

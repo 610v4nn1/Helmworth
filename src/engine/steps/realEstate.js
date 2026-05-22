@@ -22,17 +22,23 @@
  * @param {Object} asset - Real estate asset
  * @param {Object} _ctx - Step context (year not needed; sales handled outside)
  * @returns {{asset: Object, passiveIncome: number, extraExpense: number}}
- *   `passiveIncome` is the year's cash flow contribution (investment only;
- *   0 for residence). `extraExpense` is the year's added expense
- *   (residence only; 0 for investment).
+ *   `passiveIncome` is the year's positive cash-flow contribution (investment
+ *   only; 0 for residence). `extraExpense` is the year's added expense:
+ *   running costs for residences, or the absolute value of a *negative*
+ *   investment cash flow (so a money-losing rental shows up as expenses,
+ *   never as negative passive income).
  *
  * @formula
  *   value'           = value · (1 + appreciationRate)
  *   mortgageBalance' = max(0, mortgageBalance · (1 − mortgageRepaymentRate))
  *
  *   if propertyKind === 'investment':
- *     passiveIncome = cashFlow      // user-supplied; can be negative
- *     extraExpense  = 0
+ *     if cashFlow ≥ 0:
+ *       passiveIncome = cashFlow
+ *       extraExpense  = 0
+ *     else:
+ *       passiveIncome = 0
+ *       extraExpense  = −cashFlow      // a positive expense
  *   else if propertyKind === 'residence':
  *     passiveIncome = 0
  *     extraExpense  = yearlyCosts
@@ -43,6 +49,9 @@
  *     on an investment property is already folded into `cashFlow` by the user.
  *   - Cash flow is a flat yearly figure; it does not grow with rent indexation
  *     in v1 (the user may revise the asset to reflect new conditions).
+ *   - Negative cash flow on an investment property is reported as an extra
+ *     expense, not as negative passive income, so the projection chart and
+ *     coverage charts show "money in" and "money out" cleanly separated.
  *
  * Cross-reference: see "Real estate" in
  *   [engine.md](../../../docs/engine.md#real-estate).
@@ -58,6 +67,11 @@
  *   // r.asset.value === 309000
  *   // r.asset.mortgageBalance === 95000   (100000 · (1 − 0.05))
  *   // r.passiveIncome === 6000, r.extraExpense === 0
+ *
+ *   // Same property but with negative cash flow:
+ *   const inv2 = createRealEstate({ ...inv, cashFlow: -2000 });
+ *   const r1 = stepRealEstate(inv2, {});
+ *   // r1.passiveIncome === 0, r1.extraExpense === 2000
  *
  *   const home = createRealEstate({
  *     propertyKind: 'residence',
@@ -79,8 +93,22 @@ export function stepRealEstate(asset, _ctx) {
   );
 
   const isInvestment = asset.propertyKind !== 'residence'; // default → investment
-  const passiveIncome = isInvestment ? (asset.cashFlow ?? 0) : 0;
-  const extraExpense = isInvestment ? 0 : (asset.yearlyCosts ?? 0);
+
+  let passiveIncome = 0;
+  let extraExpense = 0;
+  if (isInvestment) {
+    const cf = asset.cashFlow ?? 0;
+    if (cf >= 0) {
+      passiveIncome = cf;
+    } else {
+      // Negative rental cash flow is reported as an expense, not as
+      // negative passive income — keeps "money in" and "money out"
+      // visually separated in the projection / coverage charts.
+      extraExpense = -cf;
+    }
+  } else {
+    extraExpense = asset.yearlyCosts ?? 0;
+  }
 
   return {
     asset: { ...asset, value: newValue, mortgageBalance: newMortgage },
