@@ -11,6 +11,33 @@
 import { h } from './dom.js';
 import { formatCurrency, parseCurrency, formatPercent, parsePercent } from './format.js';
 import { CLASSES } from './classDefs.js';
+import { getFieldHelp } from './fieldHelp.js';
+import { createHelpTip } from './helpTip.js';
+
+/**
+ * Build the inner content of a field <label>: the visible label text plus an
+ * optional inline "?" help-tip button that opens an explainer popup.
+ *
+ * Looking up help is centralised here so all callers (asset creation form +
+ * inline edit panel on cards) get help icons for free, with no extra wiring.
+ *
+ * @param {FieldDescriptor} field
+ * @param {Object} [ctx]
+ * @param {string} [ctx.assetClass] - One of the eight class keys; required
+ *   to scope class-specific help (e.g. stocks vs crypto avgReturnRate).
+ * @returns {Array<Node|string>}
+ */
+function buildLabelChildren(field, ctx) {
+  const children = [field.label];
+  // Help is opt-in via fieldHelp.js. Composite types (saleConversion) handle
+  // their own labelling via this same path, so they get help too if registered.
+  const help = ctx?.assetClass ? getFieldHelp(ctx.assetClass, field.key) : null;
+  if (help) {
+    children.push(' ');
+    children.push(createHelpTip(help.text, { title: help.title, label: `Help: ${field.label}` }));
+  }
+  return children;
+}
 
 /**
  * @typedef {Object} FieldDescriptor
@@ -96,7 +123,7 @@ export function renderField(field, value, ctx = {}) {
   const fieldEl = h('div', {
     className: 'field' + (field.full ? ' full' : ''),
     children: [
-      h('label', { children: field.label }),
+      h('label', { children: buildLabelChildren(field, ctx) }),
       input,
       errorEl,
     ],
@@ -306,7 +333,7 @@ function renderSaleConversion(field, value, ctx) {
   const fieldEl = h('div', {
     className: 'field' + (field.full ? ' full' : ''),
     children: [
-      h('label', { children: field.label }),
+      h('label', { children: buildLabelChildren(field, ctx) }),
       wrapper,
       errorEl,
     ],

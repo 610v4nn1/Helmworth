@@ -89,7 +89,7 @@ export function openAssetForm(store, clsKey) {
     }},
     children: [
       ...fields.map((f) => {
-        const wrap = renderField(f, initial[f.key], { store });
+        const wrap = renderField(f, initial[f.key], { store, assetClass: clsKey });
         inputs[f.key] = wrap.input;
         setErrors[f.key] = wrap.setError;
         fieldEls[f.key] = wrap.field;

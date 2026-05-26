@@ -2187,3 +2187,173 @@ mjx-container { color: var(--fg-strong); }
   border: none;
   box-shadow: none;
 }
+
+
+
+/* =========================================================================
+   FIELD HELP TIP — small "?" button beside a field label, opening a popup
+   ========================================================================= */
+
+/* The button itself: small circular badge that sits inline next to the
+   field label text. Uses currentColor so it adapts to nested contexts
+   (e.g. forms inside the picker modal vs. the expanded asset-card overlay). */
+.help-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--fg-dim);
+  font-family: var(--font-display, inherit);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  vertical-align: middle;
+  /* Anchor stable: a "?" should never shift when the surrounding label
+     wraps to a new line. Inline-flex + fixed dimensions handle this. */
+  flex: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.help-tip:hover,
+.help-tip:focus-visible {
+  background: var(--bg-hover, rgba(10, 102, 194, 0.08));
+  color: var(--fg-strong, #0a66c2);
+  border-color: var(--accent, #0a66c2);
+  transform: scale(1.05);
+  outline: none;
+}
+
+.help-tip:focus-visible {
+  box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.25);
+}
+
+/* The label is the styled element in the form; ensure it can host an inline
+   button without breaking its existing typography. */
+.field label {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* =========================================================================
+   HELP POPUP — small modal opened by .help-tip
+   --------------------------------------------------------------------------
+   Mounted at #help-popup-root, separate from #modal-root so it can stack on
+   top of the asset-creation modal (z-index 50) AND the expanded asset card
+   overlay (z-index 60) without dismissing them.
+   ========================================================================= */
+
+.help-popup-root {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 25, 0.55);
+  backdrop-filter: blur(6px) saturate(140%);
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-md);
+  animation: helpPopupFade 0.18s ease;
+}
+
+.help-popup-root[hidden] { display: none; }
+
+@keyframes helpPopupFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.help-popup {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-lg);
+  max-width: 480px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--gap-lg);
+  position: relative;
+  animation: helpPopupPop 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes helpPopupPop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.help-popup-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--gap-md);
+  margin-bottom: var(--gap-md);
+  padding-bottom: var(--gap-sm);
+  border-bottom: 1px solid var(--border);
+}
+
+.help-popup-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--fg-strong);
+  letter-spacing: -0.01em;
+}
+
+/* X button top-right of the popup. Visually echoes .modal-header .close-btn
+   for consistency. */
+.help-popup-close {
+  flex: none;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-dim);
+  padding: 0;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s, border-color 0.15s;
+}
+
+.help-popup-close:hover,
+.help-popup-close:focus-visible {
+  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+  border-color: var(--border);
+  color: var(--fg-strong);
+  transform: rotate(90deg);
+  outline: none;
+}
+
+.help-popup-body {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--fg);
+}
+
+.help-popup-para {
+  margin: 0 0 0.6em;
+}
+
+.help-popup-para:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .help-popup { padding: var(--gap-md); }
+  .help-popup-title { font-size: 1.05rem; }
+  .help-popup-body { font-size: 0.92rem; }
+}

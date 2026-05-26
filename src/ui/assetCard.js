@@ -226,7 +226,7 @@ export function renderAssetCard(asset, store, expanded, onToggleExpand) {
     } else {
       initial = asset[f.key];
     }
-    const { field: fieldEl, input } = renderField(f, initial, { store, currentAssetId: asset.id });
+    const { field: fieldEl, input } = renderField(f, initial, { store, currentAssetId: asset.id, assetClass: asset.class });
     fieldEls[f.key] = fieldEl;
     fieldInputs[f.key] = input;
     input.addEventListener('change', () => {
