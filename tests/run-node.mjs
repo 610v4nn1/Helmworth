@@ -78,6 +78,13 @@ const suites = [
   ['U2 Chart',          './unit/u2.chart.test.js'],
   ['U3 Import/Export',  './unit/u3.imex.test.js'],
   ['U4 SaleConversion', './unit/u4.saleConversion.test.js'],
+  // I-suites: JSDOM-based DOM interaction tests. Node-only — the browser
+  // runner (runner.html) skips them via the SKIP_IN_BROWSER flag exported
+  // from tests/interaction/_harness.js.
+  ['I1 AssetForm',      './interaction/i1.assetForm.test.js'],
+  ['I2 HelpTip',        './interaction/i2.helpTip.test.js'],
+  ['I3 AssetCard',      './interaction/i3.assetCard.test.js'],
+  ['I4 UserInfoForm',   './interaction/i4.userInfoForm.test.js'],
 ];
 
 for (const [label, path] of suites) {

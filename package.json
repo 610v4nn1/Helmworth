@@ -5,6 +5,10 @@
   "type": "module",
   "description": "A simple JS/HTML webapp",
   "scripts": {
-    "start": "npx --yes serve ."
+    "start": "npx --yes serve .",
+    "test": "node tests/run-node.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
   }
 }
